@@ -5,7 +5,7 @@
   :depends-on ()
   :components ((:module "src"
                 :components
-                ((:file "main"))))
+                ((:file "diff-geometry"))))
   :description ""
   :in-order-to ((test-op (test-op "diff-geometry/tests"))))
 
