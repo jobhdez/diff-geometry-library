@@ -1,5 +1,5 @@
 (uiop:define-package diff-geometry
-  (:use #:cl))
+    (:use #:cl))
 (in-package #:diff-geometry)
 
 (defclass manifold ()
@@ -88,6 +88,6 @@
 	    (defparameter exp `(/ partial-diff (* partial-diff ,(aref coordinates i))))
 	    (setf (aref bases i) exp))
 	  bases)))))
-	    
-	  
-	  
+
+
+
