@@ -79,7 +79,7 @@
 	       space)))))
 
 (defmethod vector-bases ((tspace tangent-space))
-  (let ((point (tangent-space-chart tspace)))
+  (let ((chart (tangent-space-chart tspace)))
     (let ((n (- (length ) 1)))
       (let ((coordinates (make-array `(,(length chart)) :initial-contents chart)))
 	(progn
