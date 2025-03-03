@@ -4,32 +4,59 @@
 (in-package #:diff-geometry)
 
 (defclass manifold ()
-  ((dimension :initarg :dimension :initform 2 :accessor manifold-dimension)
-   (name :initarg :name :initform 'M :accessor manifold-name)
-   (structure :initarg :structure :initform 'Euclidean :accessor manifold-structure)  
-   (chart :initarg :chart :initform #() :accessor manifold-chart)
-   (point :initarg :point :initform #() :accessor manifold-point)
-   (tangent-space :initarg :tangent-space :initform #() :accessor manifold-tangent-space)
-   (metric :initarg :metric :initform #() :accessor manifold-metric))  
+  ((dimension :initarg :dimension
+	      :initform 2
+	      :accessor manifold-dimension)
+   (name :initarg :name
+	 :initform 'M
+	 :accessor manifold-name)
+   (structure :initarg :structure
+	      :initform 'Euclidean
+	      :accessor manifold-structure)  
+   (chart :initarg :chart
+	  :initform #()
+	  :accessor manifold-chart)
+   (point :initarg :point
+	  :initform #()
+	  :accessor manifold-point)
+   (tangent-space :initarg :tangent-space
+		  :initform #()
+		  :accessor manifold-tangent-space)
+   (metric :initarg :metric
+	   :initform #()
+	   :accessor manifold-metric))  
   (:documentation "A manifold with a given dimension, name, and structure."))
 
 (defclass metric ()
-  ((lorentzian :initarg :lorentzian :initform #() :accessor metric-lorentzian)
-   (christoffel :initarg :christoffel :initform #() :accessor metric-christoffel))  
+  ((lorentzian :initarg :lorentzian
+	       :initform #()
+	       :accessor metric-lorentzian)
+   (christoffel :initarg :christoffel
+		:initform #()
+		:accessor metric-christoffel))  
   (:documentation "A Lorentzian metric for a 4 Dimensional Smooth Manifold."))
 
 (defclass chart ()
-  ((name :initarg :name :initform 'C :accessor chart-name)
-   (coordinates :initarg :coordinates :accessor chart-coordinates)
-   (fn :initarg :coordinate :accessor chart-fn))  
+  ((name :initarg :name
+	 :initform 'C
+	 :accessor chart-name)
+   (coordinates :initarg :coordinates
+		:accessor chart-coordinates)
+   (fn :initarg :coordinate
+       :accessor chart-fn))  
   (:documentation "A chart for a given manifold"))
 
 (defclass tangent-space ()
-  ((name :initarg :name :accessor tangent-space-name)
-   (dimension :initarg :dimension :accessor tangent-space-dimension)
-   (point :initarg :point :accessor tangent-space-point)
-   (chart :initarg :chart :accessor tangent-space-chart)
-   (vector-bases :initarg :vector-bases :accessor tangent-space-vector-bases))  
+  ((name :initarg :name
+	 :accessor tangent-space-name)
+   (dimension :initarg :dimension
+	      :accessor tangent-space-dimension)
+   (point :initarg :point
+	  :accessor tangent-space-point)
+   (chart :initarg :chart
+	  :accessor tangent-space-chart)
+   (vector-bases :initarg :vector-bases
+		 :accessor tangent-space-vector-bases))  
   (:documentation "A tangent space to associated with a given manifold M at point p."))
 
 (defgeneric indices (manifold)
@@ -75,26 +102,25 @@
 (defmethod point ((m manifold))
   (let ((chart (manifold-chart m))
         (point (manifold-point m)))
-    (if (equal (length chart) (length point))
-        point
-        (error "Point ~s is not defined by chart coordinates."))))
+    (assert (= (length chart) (length point)))
+    point))
 
 (defmethod tangent-space ((m manifold))
-  (let ((space (manifold-tangent-space m)))
-    (let ((point (manifold-point m)))
-      (let ((chart (manifold-chart m)))
-        (setf (tangent-space-point space) point)
-        (setf (tangent-space-chart space) chart)
-        space))))
+  (let ((space (manifold-tangent-space m))
+	(point (manifold-point m))
+	(chart (manifold-chart m)))
+    (setf (tangent-space-point space) point)
+    (setf (tangent-space-chart space) chart)
+    space))
 
 (defmethod vector-bases ((tspace tangent-space))
-  (let ((chart (tangent-space-chart tspace)))
-    (let ((n (- (length chart) 1)))
-      (let ((coordinates (make-array `(,(length chart)) :initial-contents chart)))
-        (let ((bases (make-array `(,(+ n 1)))))
-          (dotimes (i n)
-            (setf (aref bases i) `(/ partial-diff (* partial-diff ,(aref coordinates i)))))
-          bases)))))
+  (let ((chart (tangent-space-chart tspace))
+	(n (- (length chart) 1))
+        (coordinates (make-array `(,(length chart)) :initial-contents chart))
+        (bases (make-array `(,(+ n 1)))))
+    (dotimes (i n)
+      (setf (aref bases i) `(/ partial-diff (* partial-diff ,(aref coordinates i)))))
+    bases))
 
 (defmethod metric ((m manifold))
   (let ((metric (metric-lorentzian (manifold-metric m)))
