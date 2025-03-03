@@ -6,22 +6,22 @@
 (defclass manifold ()
   ((dimension :initarg :dimension :initform 2 :accessor manifold-dimension)
    (name :initarg :name :initform 'M :accessor manifold-name)
-   (structure :initarg :structure :initform 'Euclidean :accessor manifold-structure)  ;; Corrected spelling from Euclidian
+   (structure :initarg :structure :initform 'Euclidean :accessor manifold-structure)  
    (chart :initarg :chart :initform #() :accessor manifold-chart)
    (point :initarg :point :initform #() :accessor manifold-point)
    (tangent-space :initarg :tangent-space :initform #() :accessor manifold-tangent-space)
-   (metric :initarg :metric :initform #() :accessor manifold-metric))  ;; Changed field name to :metric
+   (metric :initarg :metric :initform #() :accessor manifold-metric))  
   (:documentation "A manifold with a given dimension, name, and structure."))
 
 (defclass metric ()
   ((lorentzian :initarg :lorentzian :initform #() :accessor metric-lorentzian)
-   (christoffel :initarg :christoffel :initform #() :accessor metric-christoffel))  ;; Fixed typo "chrisoffel" to "christoffel"
+   (christoffel :initarg :christoffel :initform #() :accessor metric-christoffel))  
   (:documentation "A Lorentzian metric for a 4 Dimensional Smooth Manifold."))
 
 (defclass chart ()
   ((name :initarg :name :initform 'C :accessor chart-name)
    (coordinates :initarg :coordinates :accessor chart-coordinates)
-   (fn :initarg :coordinate :accessor chart-fn))  ;; Fixed argument name to be more consistent with method definition
+   (fn :initarg :coordinate :accessor chart-fn))  
   (:documentation "A chart for a given manifold"))
 
 (defclass tangent-space ()
@@ -29,7 +29,7 @@
    (dimension :initarg :dimension :accessor tangent-space-dimension)
    (point :initarg :point :accessor tangent-space-point)
    (chart :initarg :chart :accessor tangent-space-chart)
-   (vector-bases :initarg :vector-bases :accessor tangent-space-vector-bases))  ;; Fixed typo "vector-spaces" to "vector-bases"
+   (vector-bases :initarg :vector-bases :accessor tangent-space-vector-bases))  
   (:documentation "A tangent space to associated with a given manifold M at point p."))
 
 (defgeneric indices (manifold)
@@ -60,7 +60,7 @@
   (let ((n (- (manifold-dimension m) 1))
         (*indices* (make-array `(,(+ n 1)))))
     (dotimes (i n)
-      (setf (aref *indices* i) i))  ;; Corrected array usage
+      (setf (aref *indices* i) i))  
     *indices*))
 
 (defmethod chart ((m manifold))
