@@ -1,0 +1,19 @@
+* TODO rewrite in haskell
+* TODO figure a typeclass for functions or something like the ocaml book
+* DONE Automatic differentiation
+I should be able to do most of the partial derivatives;
+
+need to figure out how to connect the functions to the evaluation and derivative ie dual number
+** TODO calculate  christoffel symbols
+** TODO riemann curvature tensor given christoffel symbols
+** TODO ricci tensor from riemann curvature tensor
+** TODO scalar curvature
+** TODO einstein tensor: ric-g*scalarCurvature/2
+** TODO a zero matrix means no matter or non gravitation fields are present
+- this related to black holes
+** TODO it would be nice if i can calculate the solution that predicts the expansion of the universe ie cosmology spacetime
+- evidence that the universe had a beginning which may have some philosophical implication
+- also compute the curvature of spheres. you do this with riemann tensor
+- you need to model differential geometry right. your code needs to make conceptual sense,
+  not just work.
+- understand the embedding problem by implementing it https://mccuan.math.gatech.edu/courses/6455/BenAndrewsEmbedding.pdf
