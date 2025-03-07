@@ -5,7 +5,16 @@ I should be able to do most of the partial derivatives;
 
 ** TODO extend this dual number system to include tensors :-)
 
-need to figure out how to connect the functions to the evaluation and derivative ie dual number
+** TODO need to figure out how to connect the functions to the evaluation and derivative ie dual number
+how to represent the users initial function?
+  build a language/compiler
+    do something like this https://simon.peytonjones.org/assets/pdfs/higher-order-ad.pdf
+    although as a user do i want to mess with a whole language?
+    how would i express some spacetime metric?
+    or a language for diff geometry
+    by making a language you add expressiveness. the user can express
+    general realtivty better but they need to learn a language but this would be
+    simple. the language would target the dual number library.
 ** TODO calculate  christoffel symbols
 ** TODO riemann curvature tensor given christoffel symbols
 ** TODO ricci tensor from riemann curvature tensor
