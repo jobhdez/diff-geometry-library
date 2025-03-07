@@ -3,6 +3,8 @@
 * DONE Automatic differentiation
 I should be able to do most of the partial derivatives;
 
+** TODO extend this dual number system to include tensors :-)
+
 need to figure out how to connect the functions to the evaluation and derivative ie dual number
 ** TODO calculate  christoffel symbols
 ** TODO riemann curvature tensor given christoffel symbols
