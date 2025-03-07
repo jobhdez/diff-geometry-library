@@ -158,12 +158,22 @@ Dual 14 3
 {--
 z = f(x y) = x^2 + xy + y^2
 
-partialDiff(z, x)
+fn = partialDiff(z, x)
 
 z -> f(x) = x^2 + x*1 + 1^2
 
-and just use dual numbers to solve this.
+fn(1) ->
 
-every variable thats being ignored is
-treated as a constant
+ghci> d1 = Dual 1 1 * Dual 1 1
+d1 = Dual 1 1 * Dual 1 1
+ghci> d2 = Dual 1 1 * Dual 1 0
+d2 = Dual 1 1 * Dual 1 0
+ghci> d3 = d1 + d2
+d3 = d1 + d2
+ghci> d3 + Dual 1 0
+d3 + Dual 1 0
+Dual 3 3
+ghci> d3
+d3
+Dual 2 3
 --}
