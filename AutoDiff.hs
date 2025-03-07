@@ -127,3 +127,30 @@ sd :: Double
 sd = cos(3 + 1)
 dual :: Dual Double
 dual = Dual s sd
+
+-- example 1
+-- f(x) = 4x + 3
+-- f(3)
+-- 3 -> dual
+---- dual = (Dual 3 1)
+----   1 is the derivative of 3
+---- mulitply by constant 3
+---- dual2 = (Dual 3  0)
+---- dual * dual2
+
+{--
+ghci> dual = Dual 4 1
+dual = Dual 4 1
+ghci> dual2 = Dual 3 0
+dual2 = Dual 3 0
+ghci> dual3 = dual * dual2
+dual3 = dual * dual2
+ghci> dual3
+dual3
+Dual 12 3
+ghci> df = Dual 2 0
+df = Dual 2 0
+ghci> dual3 + df
+dual3 + df
+Dual 14 3
+--}
