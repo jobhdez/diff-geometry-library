@@ -153,4 +153,17 @@ df = Dual 2 0
 ghci> dual3 + df
 dual3 + df
 Dual 14 3
+---}
+
+{--
+z = f(x y) = x^2 + xy + y^2
+
+partialDiff(z, x)
+
+z -> f(x) = x^2 + x*1 + 1^2
+
+and just use dual numbers to solve this.
+
+every variable thats being ignored is
+treated as a constant
 --}
