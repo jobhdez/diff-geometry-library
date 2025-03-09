@@ -70,7 +70,7 @@ A chart on a Topological Manifold M is a pair (U, p') consisting of an
 open subset U of M and a homeomorphism p: U -> U' where U' is defined
 as p(U') being a subset of R^n.
 
-Here a homeomorphism means that p: U -> U' and p^-1: U -> U' are both continuous.
+Here a homeomorphism means that p: U -> U' and p^-1: U'-> U are both continuous.
 
 Given a chart on M, each point p in M is in the coordinate domain.
 
