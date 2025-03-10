@@ -2,7 +2,15 @@ module SmoothFunction where
 
 import AutoDiff (Dual(Dual), sin', cos', tan', asin')
 
-import Manifold (Point, ScalarField(ScalarField), getPoint, getChart, MathExpr(Plus, Var, Num, Mul, Sin, Cos, Tan, Asin, Acos, Atan), primalPart, dualPart)
+import Manifold(
+  Point,
+  ScalarField(ScalarField),
+  getPoint,
+  getChart,
+  MathExpr(Plus, Var, Num, Mul, Sin, Cos, Tan, Asin, Acos, Atan),
+  primalPart,
+  dualPart
+  )
 
 type Variable = String
 
