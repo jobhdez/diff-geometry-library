@@ -165,7 +165,7 @@ z -> f(x) = x^2 + x*1 + 1^2
 fn(1) ->
 
 ghci> d1 = Dual 1 1 * Dual 1 1
-d1 = Dual 1 1 * Dual 1 1
+
 ghci> d2 = Dual 1 1 * Dual 1 0
 d2 = Dual 1 1 * Dual 1 0
 ghci> d3 = d1 + d2
@@ -176,4 +176,12 @@ Dual 3 3
 ghci> d3
 d3
 Dual 2 3
+--}
+{--
+f(y) = 2 + 1y
+
+y = 1
+d = Dual 1 1
+d' = d * Dual 1 0
+d'' = d' * Dual 2 0
 --}
