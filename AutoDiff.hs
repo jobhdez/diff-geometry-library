@@ -120,68 +120,40 @@ dualAtan :: Floating a => Dual a -> Dual a
 dualAtan (Dual p1 d1) =
   Dual (atan p1) (d1 / (1 + (p1 * p1)))
 
--- example
-s :: Double
-s = sin(3 + 1)
-sd :: Double
-sd = cos(3 + 1)
-dual :: Dual Double
-dual = Dual s sd
+class Exp a where
+  exp' :: a -> a
+  ln' :: a -> a 
+  pow' :: a -> a -> a
+  log' :: a -> a -> a
 
--- example 1
--- f(x) = 4x + 3
--- f(3)
--- 3 -> dual
----- dual = (Dual 3 1)
-----   1 is the derivative of 3
----- mulitply by constant 3
----- dual2 = (Dual 3  0)
----- dual * dual2
+instance Exp Float where
+  exp' e = exp e
+  ln' e = log e
+  pow' e e2 = e ** e2
+  log' e e2 = logBase e e2
 
-{--
-ghci> dual = Dual 4 1
-dual = Dual 4 1
-ghci> dual2 = Dual 3 0
-dual2 = Dual 3 0
-ghci> dual3 = dual * dual2
-dual3 = dual * dual2
-ghci> dual3
-dual3
-Dual 12 3
-ghci> df = Dual 2 0
-df = Dual 2 0
-ghci> dual3 + df
-dual3 + df
-Dual 14 3
----}
+instance Exp Double where
+  exp' e = exp e
+  ln' e = log e
+  pow' e e2 = e ** e2
+  log' e e2 = logBase e e2
+ 
+instance (Floating a, Num a, Exp a) => (Exp (Dual a)) where
+  exp' e = dualExp e
+  ln' e = dualLn e
+  pow' e e2 = dualPower e e2
+  log' e e2 = dualLog e e2
 
-{--
-z = f(x y) = x^2 + xy + y^2
 
-fn = partialDiff(z, x)
+dualExp :: Floating a => Dual a -> Dual a
+dualExp (Dual p1 d1) =
+  Dual (exp p1) (d1 * (exp p1))
 
-z -> f(x) = x^2 + x*1 + 1^2
+dualLn (Dual p1 d1) =
+  Dual (log p1) (d1 / p1)
 
-fn(1) ->
+dualPower dual1 dual2 =
+  (exp' (dual2 * (ln' dual1)))
 
-ghci> d1 = Dual 1 1 * Dual 1 1
-
-ghci> d2 = Dual 1 1 * Dual 1 0
-d2 = Dual 1 1 * Dual 1 0
-ghci> d3 = d1 + d2
-d3 = d1 + d2
-ghci> d3 + Dual 1 0
-d3 + Dual 1 0
-Dual 3 3
-ghci> d3
-d3
-Dual 2 3
---}
-{--
-f(y) = 2 + 1y
-
-y = 1
-d = Dual 1 1
-d' = d * Dual 1 0
-d'' = d' * Dual 2 0
---}
+dualLog dual1 dual2 =
+  (ln' dual2) / (ln' dual1)
