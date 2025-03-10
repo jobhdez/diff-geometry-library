@@ -1,6 +1,7 @@
 module Manifold where
 
-import AutoDiff ( Dual(Dual))
+import AutoDiff ( Dual(Dual) )
+
 data Manifold =
   Manifold Int String String String [String]
 
@@ -8,25 +9,44 @@ data VectorField =
   VectorField [MathExpr]
 
 data Vector =
-  Vector [Int]
+  Vector [Float]
   deriving Show
+
 type Coordinates = [String]
-type Point = [Int]
+type Point = [Float]
 
 type ManifoldName = String
 
 data Chart =
-  Chart Manifold [String] [Int]
+  Chart Manifold Coordinates Point
+
+getPoint :: Chart -> Point
+getPoint (Chart manifold coord point) =
+  point
   
 data ScalarField =
   ScalarField Manifold Chart MathExpr
+
+getChart :: ScalarField -> Chart
+getChart (ScalarField manifold chart _) =
+  chart
   
 -- f(x,y) = 2x + y
 data MathExpr =
   Var String
-  | Num Int
+  | Num Float
   | Plus MathExpr MathExpr
   | Mul MathExpr MathExpr
+  | Sin MathExpr
+  | Cos MathExpr
+  | Tan MathExpr
+  | Asin MathExpr
+  | Acos MathExpr
+  | Atan MathExpr
+  | Exp MathExpr
+  | Ln MathExpr
+  | Power MathExpr MathExpr
+  | Log MathExpr MathExpr
 
   
 class TopologicalManifold a where
@@ -162,7 +182,8 @@ makeTangentVector' manifold (VectorField fields)  point =
   let n = evaluate (head fields) point in
     Vector [n, n]
 
-evaluate :: MathExpr -> Point -> Int
+-- f(x, y) = x + y
+evaluate :: MathExpr -> Point -> Float
 evaluate (Plus (Mul (Num n) var) (Var var')) point =
   let d1 = Dual n 1
       d2 = Dual 1 0
@@ -179,7 +200,7 @@ dualPart :: Dual a -> a
 dualPart (Dual _ dual) =
   dual
 
-diff :: MathExpr -> String -> Int
+diff :: MathExpr -> String -> Float
 diff (Plus (Mul (Num n) x) (Var y)) "x"  =
   -- with respect to x
    let d1 = Dual n 1
@@ -199,7 +220,7 @@ diff (Plus (Mul n x) (Var y)) "y"  =
       
   
   
-directionalDiff' :: MathExpr -> Vector ->  Int
+directionalDiff' :: MathExpr -> Vector ->  Float
 directionalDiff' expr (Vector vec) =
   let diffx = diff expr "x"
       diffy = diff expr "y"
