@@ -113,14 +113,7 @@ interp'' (Cos e) (x:xs) var'' =
 interp'' (Tan (Var v)) (x:xs) var'' =
   if v == var''
   then
-    let sindiff = interp'' (Sin (Var "x")) (x:xs) var''
-        cosdiff = interp'' (Cos (Var "x")) (x:xs) var''
-        f' = dualPart sindiff
-        f = primalPart sindiff
-        g' = dualPart cosdiff
-        g = primalPart cosdiff
-        tandiff = ((g * f') - (f * g')) / g ** 2 in
-      Dual (asin x) tandiff
+    Dual (tan x) ((1 / (cos x)) ** 2)
   else
     tan' (Dual x 0)
     
