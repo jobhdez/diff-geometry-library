@@ -5,6 +5,7 @@ import AutoDiff (Dual(Dual), sin', cos', tan', asin')
 import Manifold(
   Point,
   ScalarField(ScalarField),
+  VectorField(VectorField),
   getPoint,
   getChart,
   MathExpr(Plus, Var, Num, Mul, Sin, Cos, Tan, Asin, Acos, Atan),
@@ -18,13 +19,13 @@ class SmoothFunction a where
   eval :: a -> Point -> Float
   differential :: a -> Variable -> Float
   --gradient :: a -> Metric -> VectorField
-  --lieDiff :: a -> VectorField -> Float
+  lieDiff :: a -> VectorField -> Float
 
 instance SmoothFunction ScalarField where
   eval field point = eval' field point 
   differential field var = differential' field var
   --gradient field metric = gradient' field metric
-  --lieDiff scalarField vectorField = lieDiff' scalarField vectorField
+  lieDiff scalarField vectorField = lieDiff' scalarField vectorField
 
 eval' :: ScalarField -> Point -> Float
 eval' field point =
@@ -36,7 +37,25 @@ differential' field var =
   let point = getPoint (getChart field)
       dual = interp' field point var in
     dualPart dual
-    
+
+lieDiff' :: ScalarField -> VectorField -> Float
+lieDiff' (ScalarField _ chart expr) (VectorField field) =
+  let point = getPoint chart in
+    lieDiff'' expr field point
+
+lieDiff'' :: MathExpr -> [MathExpr] -> Point -> Float
+lieDiff'' expr field point =
+  --  f(x,y) = x * sin(y)
+  -- vectorfield = v = y ∂/∂x + x ∂/∂y
+  let diffx = dualPart (interp'' expr point "x")
+      
+      diffy = dualPart (interp'' expr point "y")
+      t1 = (head point) * diffy
+      t2 = (head (tail point)) * diffx in
+    t1 + t2
+      
+  
+  
 interp' :: ScalarField -> Point -> Variable -> Dual Float
 interp' (ScalarField manifold chart mathexpr) point var =
   interp'' mathexpr point var
@@ -57,10 +76,19 @@ interp'' (Var v) (x:xs) var'' =
 interp'' (Plus e e2) (x:xs) var'' =
   interp'' e (x:xs) var'' + interp'' e2 (x:xs) var''
 
-interp'' (Mul e e2) (x:xs) var'' =
-  interp'' e (x:xs) var'' * interp'' e2 (x:xs) var''
-  
-
+interp'' (Mul (Var x) (Sin (Var y))) (x':xs) var'' =
+  if not (y == var'') && x == var''
+  then
+    let constant = sin' (Dual 2 0)
+        diffx = interp'' (Var x) [x'] var''
+        in
+      constant * diffx
+  else
+    let constant = (Dual 1 0)
+        diffy = interp'' (Sin (Var y)) xs "y"
+        in
+      constant * diffy
+          
 interp'' (Sin (Var v)) (x:xs) var'' =
   if v == var''
   then
