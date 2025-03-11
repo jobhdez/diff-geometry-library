@@ -1,6 +1,6 @@
 module SmoothFunction where
 
-import AutoDiff (Dual(Dual), sin', cos', tan', asin')
+import AutoDiff (Dual(Dual), sin', cos', tan', asin', acos', atan')
 
 import Manifold(
   Point,
@@ -76,28 +76,18 @@ interp'' (Var v) (x:xs) var'' =
 interp'' (Plus e e2) (x:xs) var'' =
   interp'' e (x:xs) var'' + interp'' e2 (x:xs) var''
 
-interp'' (Mul (Var x) (Sin (Var y))) (x':xs) var'' =
-  if not (y == var'') && x == var''
-  then
-    let constant = sin' (Dual 2 0)
-        diffx = interp'' (Var x) [x'] var''
-        in
-      constant * diffx
-  else
-    let constant = (Dual 1 0)
-        diffy = interp'' (Sin (Var y)) xs "y"
-        in
-      constant * diffy
-          
+interp'' (Mul e e2) (x:xs) var'' =
+  interp'' e [x] var'' * interp'' e2 xs var''
+           
 interp'' (Sin (Var v)) (x:xs) var'' =
   if v == var''
   then
     Dual (sin x) (cos x)
   else
-    Dual 1 0
+    sin' (Dual x 0)
 
 interp'' (Sin (Num n)) (x:xs) var'' =
-  Dual (sin n) 0
+  sin' (Dual n 0)
 
 interp'' (Sin e) (x:xs) var'' =
   -- f(x) = sin(2 + x)
@@ -109,15 +99,15 @@ interp'' (Cos (Var v)) (x:xs) var'' =
   then
     Dual (cos x) (negate (sin x))
   else
-    Dual 1 0
+    cos' (Dual x 0)
 
 interp'' (Cos (Num n)) (x:xs) var'' =
-  Dual (cos n) 0
+  cos' (Dual n 0)
 
 interp'' (Cos e) (x:xs) var'' =
   -- f(x) = sin(2 + x)
   let e' = interp'' e (x:xs) var'' in
-    sin' e'
+    cos' e'
 
 
 interp'' (Tan (Var v)) (x:xs) var'' =
@@ -132,21 +122,21 @@ interp'' (Tan (Var v)) (x:xs) var'' =
         tandiff = ((g * f') - (f * g')) / g ** 2 in
       Dual (asin x) tandiff
   else
-    Dual 1 0
+    tan' (Dual x 0)
     
 interp'' (Tan e) (x:xs) var'' =
   let e' = interp'' e (x:xs) var'' in
     tan' e'
     
 interp'' (Asin (Num n)) (x:xs) var'' =
-  Dual (cos n) 0
+  asin' (Dual n 0)
 
 interp'' (Asin (Var v)) (x:xs) var'' =
   if v == var''
   then
     Dual (asin x) (acos x)
   else
-    Dual 1 0
+    asin' (Dual x 0)
   
 interp'' (Asin e) (x:xs) var'' =
   -- f(x) = sin(2 + x)
@@ -154,17 +144,17 @@ interp'' (Asin e) (x:xs) var'' =
     asin' e'
 
 interp'' (Acos (Num n)) (x:xs) var'' =
-  (Dual 1 0)
+  acos' (Dual n 0)
 
 interp'' (Acos (Var v)) (x:xs) var'' =
   if v == var''
   then
     Dual (acos x) (negate (asin x))
   else
-    Dual 1 0
+    acos' (Dual x 0)
 
 interp'' (Atan (Num n)) (x:xs) var'' =
-  Dual 1 0
+  atan' (Dual n 0)
 
 interp'' (Atan (Var v)) (x:xs) var'' =
   if v == var''
@@ -178,7 +168,7 @@ interp'' (Atan (Var v)) (x:xs) var'' =
          atandiff = ((g' * f) - (g * f')) / f ** 2  in
        (Dual (atan x) atandiff)
    else
-    Dual 1 0
+    atan' (Dual x 0)
   
 
 
