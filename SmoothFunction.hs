@@ -152,14 +152,7 @@ interp'' (Atan (Num n)) (x:xs) var'' =
 interp'' (Atan (Var v)) (x:xs) var'' =
   if v == var''
   then
-     let sindiff = interp'' (Sin (Var "x")) (x:xs) var''
-         cosdiff = interp'' (Cos (Var "x")) (x:xs) var''
-         f' = dualPart sindiff
-         f = primalPart sindiff
-         g' = dualPart cosdiff
-         g = primalPart cosdiff
-         atandiff = ((g' * f) - (g * f')) / f ** 2  in
-       (Dual (atan x) atandiff)
+    (Dual (atan x) ((acos (1 / x)) ** 2))
    else
     atan' (Dual x 0)
   
