@@ -24,19 +24,18 @@ type Variable = String
 
 class SmoothFunction a where
   eval :: a -> Point -> Float
-  differential :: a -> Variable -> Float
+  differential :: a ->  Point -> Float
   gradient :: a -> Tensor -> [Float]
   lieDiff :: a -> VectorField -> Float
-  --laplacian :: a -> Metric -> SmoothScalarField
-  -- degree
-  -- exteriorDiff
-  -- dalembartian :: a -> Metric -> SmoothScalarField
-
+  -- laplacian: this involves second order partial derivatives.
+  -- you need hyperduals.
+  
 instance SmoothFunction ScalarField where
   eval field point = eval' field point 
-  differential field var = differential' field var
+  differential field point = directionalDiff' field point
   gradient field metric = gradient' field metric
   lieDiff scalarField vectorField = lieDiff' scalarField vectorField
+  
 
 eval' :: ScalarField -> Point -> Float
 eval' field point =
@@ -59,13 +58,7 @@ gradient'' exp (x:xs) (y:ys) =
   let dual = interp'' exp (x:xs) y
   in
     dualPart dual : gradient'' exp (x:xs) ys
-  
-differential' :: ScalarField -> Variable -> Float
-differential' field var =
-  let point = getPoint (getChart field)
-      dual = interp' field point var in
-    dualPart dual
-
+    
 lieDiff' :: ScalarField -> VectorField -> Float
 lieDiff' (ScalarField _ chart expr) (VectorField field) =
   let point = getPoint chart in
@@ -75,14 +68,34 @@ lieDiff'' :: MathExpr -> [MathExpr] -> Point -> Float
 lieDiff'' expr field point =
   --  f(x,y) = x * sin(y)
   -- vectorfield = v = y ∂/∂x + x ∂/∂y
+  
   let diffx = dualPart (interp'' expr point "x")
       
       diffy = dualPart (interp'' expr point "y")
       t1 = (head point) * diffy
       t2 = (head (tail point)) * diffx in
     t1 + t2
-      
+
+directionalDiff' :: ScalarField -> Point -> Float
+directionalDiff' (ScalarField manifold chart expr) point =
+  -- you need generalize this to any higher dimension
+  -- a vector field maps a vector to each point on a manifold.
+  -- This is done by taking the directional derivative.
+  let n = interp'' expr point "x"
+      n' = interp'' expr point "y"
+      diffx = dualPart n
+      diffy = dualPart n'
+      e1 = head point
+      e2 = head (tail point) in
+    (e1 * diffx) + (e2 * diffy)
+
+getY :: Point -> Float
+getY point =
+  head point
   
+getX :: Point -> Float
+getX point =
+  head (tail point)
   
 interp' :: ScalarField -> Point -> Variable -> Dual Float
 interp' (ScalarField manifold chart mathexpr) point var =

@@ -208,6 +208,7 @@ instance TangentVector VectorField where
 manifoldDimension :: Manifold -> Int
 manifoldDimension (Manifold dimension _ _ _ _) =
   dimension
+  
 makeTangentVector' :: Manifold -> VectorField -> Point -> Vector
 makeTangentVector' manifold (VectorField fields)  point =
   -- f(x,y) = 2x + y
@@ -251,13 +252,15 @@ diff (Plus (Mul n x) (Var y)) "y"  =
       d''' = d'' + Dual 2 0 in
     dualPart d'''
       
+ {-- 
   
-  
-directionalDiff' :: MathExpr -> Vector ->  Float
-directionalDiff' expr (Vector vec) =
+directionalDiff' :: VectorField -> Point -> Float
+directionalDiff' (VectorField expr) point =
+  -- you need generalize this, not only x and y
   let diffx = diff expr "x"
       diffy = diff expr "y"
-      e1 = head vec
-      e2 = head (tail vec) in
+      e1 = head point
+      e2 = head (tail point) in
     (e1 * diffx) + (e2 * diffy)
   
+--}

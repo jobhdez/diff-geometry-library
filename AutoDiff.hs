@@ -35,6 +35,7 @@ dualNumMul (Dual p1 d1) (Dual p2 d2) =
 dualNumSignum :: Num a => (Dual a) -> (Dual a)
 dualNumSignum (Dual p1 d1) =
   Dual (signum p1) 0
+  
 dualNumAbs :: Num a => (Dual a) -> Dual a
 dualNumAbs (Dual p1 d1) =
   Dual (abs p1) 0
