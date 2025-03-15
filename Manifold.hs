@@ -20,10 +20,13 @@ type ManifoldName = String
 data Chart =
   Chart Manifold Coordinates Point
 
-getPoint :: Chart -> Point
+getPoint :: Chart -> [Float]
 getPoint (Chart manifold coord point) =
   point
   
+getCoords :: Chart -> [String]
+getCoords (Chart manifold coord point) =
+  coord
 data ScalarField =
   ScalarField Manifold Chart MathExpr
 
@@ -117,7 +120,27 @@ class TangentSpace a where
 instance TangentSpace TangentVectors where
   tangentVectors vectors point = tangentVectors' vectors point
 --}
-
+{--
+class SmoothMap a where
+  differential :: a -> Point -> Morphism
+  jacobianMatrix :: a -> Chart -> Chart -> Matrix
+  pullBack :: a -> Tensor -> Tensor
+  pushForward :: a -> Tensor -> Tensor
+--}
+{--
+class Chart a where
+  frame :: a -> Coordinates -> Frame
+  restrict :: a -> Manifold -> a
+  transitionMap :: a -> a -> Restrictions -> Restrictions -> DiffCoordChange
+  jacobianMatrix :: a -> Coordinates -> Matrix 
+  jacobianDet :: a -> Coordinates -> MatrixFunction
+--}
+{--
+class VectorField a where
+  crossProduct :: a -> Metric -> VectorField
+  dotProduct :: a -> Metric -> DiffScalarField
+  norm :: a -> Metric -> DiffScalarField
+--}
 instance TopologicalManifold Manifold where
   scalarField manifold chart fn = topologicalField manifold chart fn
   openSubset manifold name coordinate = topologicalOpenSubset manifold name coordinate
@@ -162,8 +185,18 @@ topology of M.
 --}
   
   Manifold dimension name' structure field coordinateRestriction
-
-  
+{--
+class PseudoRiemannMetric a where
+  christoffel_symbols :: a -> Chart -> MathExpr
+  connection :: a -> Connection
+  determinant :: Frame -> DiffScalarField
+  inverse :: a -> Tensor
+  restrict :: a  ->  a
+  ricci :: a -> Tensor
+  ricciScalar :: a -> DiffScalarField
+  riemann :: a -> Tensor
+  restrict :: a -> Restriction
+--}
 class TangentVector a where
   makeTangentVector :: Manifold -> a -> Point -> Vector
   --directionalDiff :: a -> MathExpr -> Int
@@ -227,3 +260,4 @@ directionalDiff' expr (Vector vec) =
       e1 = head vec
       e2 = head (tail vec) in
     (e1 * diffx) + (e2 * diffy)
+  

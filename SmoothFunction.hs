@@ -8,30 +8,58 @@ import Manifold(
   VectorField(VectorField),
   getPoint,
   getChart,
+  getCoords,
+  Coordinates,
   MathExpr(Plus, Var, Num, Mul, Sin, Cos, Tan, Asin, Acos, Atan),
   primalPart,
   dualPart
   )
 
+data Tensor =
+  Scalar Float
+  | Vector [Float]
+  | Tensor Tensor
+  
 type Variable = String
 
 class SmoothFunction a where
   eval :: a -> Point -> Float
   differential :: a -> Variable -> Float
-  --gradient :: a -> Metric -> VectorField
+  gradient :: a -> Tensor -> [Float]
   lieDiff :: a -> VectorField -> Float
+  --laplacian :: a -> Metric -> SmoothScalarField
+  -- degree
+  -- exteriorDiff
+  -- dalembartian :: a -> Metric -> SmoothScalarField
 
 instance SmoothFunction ScalarField where
   eval field point = eval' field point 
   differential field var = differential' field var
-  --gradient field metric = gradient' field metric
+  gradient field metric = gradient' field metric
   lieDiff scalarField vectorField = lieDiff' scalarField vectorField
 
 eval' :: ScalarField -> Point -> Float
 eval' field point =
   let dual = interp' field point "x" in
     primalPart dual
+    
+gradient' :: ScalarField -> Tensor -> [Float]
+gradient'  (ScalarField _ chart expr) metric =
+  let point = getPoint chart
+      coords = getCoords chart
+      gradient = gradient'' expr point coords
+      in
+    gradient
 
+gradient'' :: MathExpr -> Point -> Coordinates -> [Float]
+gradient'' exp (x:xs) [] = []
+gradient'' exp (x:xs) (y:ys) =
+  -- generialize to pseudo riemanr metric
+  -- also need an evaluator from MathExpr -> MathExpr
+  let dual = interp'' exp (x:xs) y
+  in
+    dualPart dual : gradient'' exp (x:xs) ys
+  
 differential' :: ScalarField -> Variable -> Float
 differential' field var =
   let point = getPoint (getChart field)
