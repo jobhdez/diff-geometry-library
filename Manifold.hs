@@ -54,23 +54,24 @@ data Vector =
 --data Subsets =
  -- Subsets (Map.Map String Manifold)
   
-type Coordinates = [String]
+type Coordinates = [MathExpr]
 type Point = [Float]
 
-data Chart =
-  Chart Manifold Coordinates Point
+data Chart' =
+  Chart' Manifold Coordinates Point
+  deriving Show
 
-getPoint :: Chart -> [Float]
-getPoint (Chart manifold coord point) =
+getPoint :: Chart' -> [Float]
+getPoint (Chart' manifold coord point) =
   point
   
-getCoords :: Chart -> [String]
-getCoords (Chart manifold coord point) =
+getCoordinates :: Chart' -> [MathExpr]
+getCoordinates (Chart' manifold coord point) =
   coord
 data ScalarField =
-  ScalarField Manifold Chart MathExpr
+  ScalarField Manifold Chart' MathExpr
 
-getChart :: ScalarField -> Chart
+getChart :: ScalarField -> Chart'
 getChart (ScalarField manifold chart _) =
   chart
   
@@ -90,6 +91,8 @@ data MathExpr =
   | Ln MathExpr
   | Power MathExpr MathExpr
   | Log MathExpr MathExpr
+  | Eq MathExpr MathExpr
+  deriving Show
 
   
 class TopologicalManifold a where
@@ -127,10 +130,10 @@ References:
 
 --}
 
-  scalarField :: a -> Chart -> MathExpr -> ScalarField
+  scalarField :: a -> Chart' -> MathExpr -> ScalarField
   --constantScalarField :: a -> ConstantScalarField
   openSubset :: a -> Manifold -> Map.Map String Manifold -> Map.Map String Manifold
-  chart :: a -> Coordinates -> Point -> Chart
+  chart :: a -> Coordinates -> Point -> Chart'
   --subsets :: a -> [Manifold]
 
 -- given a chart on m, each point p in m is in the coordinate domain
@@ -168,21 +171,25 @@ class SmoothMap a where
   pullBack :: a -> Tensor -> Tensor
   pushForward :: a -> Tensor -> Tensor
 --}
-{--
+
 class Chart a where
-  frame :: a -> Coordinates -> Frame
-  restrict :: a -> Manifold -> a
-  transitionMap :: a -> a -> Restrictions -> Restrictions -> DiffCoordChange
-  function :: a -> Chart -> MathExpr
-  jacobianMatrix :: a -> Coordinates -> Matrix 
-  jacobianDet :: a -> Coordinates -> MatrixFunction
---}
+ --frame :: a -> Coordinates -> Frame
+  --restrict :: a -> Manifold -> a
+  transitionMap :: a -> a -> [MathExpr] -> Coordinates
+  --function :: a -> Chart -> MathExpr
+  --jacobianMatrix :: a -> Coordinates -> Matrix 
+  --jacobianDet :: a -> Coordinates -> MatrixFunction
+
 {--
 class VectorField a where
   crossProduct :: a -> Metric -> VectorField
   dotProduct :: a -> Metric -> DiffScalarField
   norm :: a -> Metric -> DiffScalarField
 --}
+
+instance Chart Chart' where
+  transitionMap chart chart' = transitionMap' chart chart
+  
 instance TopologicalManifold Manifold where
   scalarField manifold chart fn = topologicalField manifold chart fn
   openSubset manifold manifold' = topologicalOpenSubset manifold manifold'
@@ -191,7 +198,7 @@ instance TopologicalManifold Manifold where
 instance SmoothManifold Manifold where
   tangentVector fields manifold point = makeTangentVector fields manifold point
 
-topologicalChart :: Manifold -> Coordinates -> Point -> Chart
+topologicalChart :: Manifold -> Coordinates -> Point -> Chart'
 topologicalChart manifold coordinates points =
 {--
 
@@ -208,9 +215,9 @@ of the map map(p') = (x1(p), x2(p), ..xn(p))
 
 --}
 
-  Chart manifold coordinates points
+  Chart' manifold coordinates points
 
-topologicalField :: Manifold -> Chart -> MathExpr -> ScalarField
+topologicalField :: Manifold -> Chart' -> MathExpr -> ScalarField
 topologicalField manifold chart fn =
   ScalarField manifold chart fn
 
@@ -309,4 +316,9 @@ subsetsMap manifold manifoldSubset subsetsMap =
   
 
 
-
+transitionMap' :: Chart' -> Chart' -> [MathExpr] -> Coordinates
+transitionMap' chart chart' mathexprs =
+  let coordinates = getCoordinates chart
+      coordinates' = getCoordinates chart' in
+    map (\(x,y) -> Eq x y) $ zip   coordinates' mathexprs
+    
