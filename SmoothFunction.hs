@@ -8,13 +8,15 @@ import Manifold(
   VectorField(VectorField),
   getPoint,
   getChart,
-  getCoords,
+  getCoordinates,
   Coordinates,
   MathExpr(Plus, Var, Num, Mul, Sin, Cos, Tan, Asin, Acos, Atan),
   primalPart,
   dualPart,
   interp',
-  Tensor(...)
+  interp'',
+  diff',
+  Tensor(..)
   )
   
 
@@ -41,14 +43,14 @@ eval' field point =
 gradient' :: ScalarField -> Tensor -> [Float]
 gradient'  (ScalarField _ chart expr) metric =
   let point = getPoint chart
-      coords = getCoords chart
+      coords = getCoordinates chart
       gradient = gradient'' expr point coords
       in
     gradient
 
 gradient'' :: MathExpr -> Point -> Coordinates -> [Float]
 gradient'' exp (x:xs) [] = []
-gradient'' exp (x:xs) (y:ys) =
+gradient'' exp (x:xs) (Var y:ys) =
   -- generialize to pseudo riemanr metric
   -- also need an evaluator from MathExpr -> MathExpr
   let dual = interp'' exp (x:xs) y
@@ -74,17 +76,14 @@ lieDiff'' expr field point =
 
 directionalDiff' :: ScalarField -> Point -> Float
 directionalDiff' (ScalarField manifold chart expr) point =
-  -- you need generalize this to any higher dimension
   -- a vector field maps a vector to each point on a manifold.
   -- This is done by taking the directional derivative.
-  let n = interp'' expr point "x"
-      n' = interp'' expr point "y"
-      diffx = dualPart n
-      diffy = dualPart n'
-      e1 = head point
-      e2 = head (tail point) in
-    (e1 * diffx) + (e2 * diffy)
+  directDiff' expr point (getCoordinates chart)
 
+directDiff' :: MathExpr -> Point -> Coordinates ->  Float
+directDiff' expr (x:xs) ((Var y):ys) =
+  x * (dualPart (interp'' expr [x] y)) + directDiff' expr xs ys
+  
 getY :: Point -> Float
 getY point =
   head point
