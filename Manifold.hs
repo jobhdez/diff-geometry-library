@@ -183,7 +183,7 @@ class SmoothMap a where
 --}
 
 class Chart a where
- --frame :: a -> Coordinates -> Frame
+  frame :: a -> [String]
   --restrict :: a -> Manifold -> a
   transitionMap :: a -> a -> [MathExpr] -> Coordinates
   --function :: a -> Chart -> MathExpr
@@ -200,6 +200,7 @@ class VectorField a where
 instance Chart Chart' where
   transitionMap chart chart' = transitionMap' chart chart
   jacobianMatrix chart = jacobianMatrix' chart
+  frame chart = frame' chart
   
 instance TopologicalManifold Manifold where
   scalarField manifold chart fn = topologicalField manifold chart fn
@@ -327,6 +328,11 @@ diff' :: Coordinates -> Point ->  [[Float]]
 diff' [] _ = []
 diff' (x:xs) point =
   [dualPart (interp'' x point "x"), dualPart (interp'' x point "y")] :  diff' xs point
+
+frame' :: Chart' -> [String]
+frame' (Chart' manifold [] point) = []
+frame' (Chart' manifold (Var x:xs) point) =
+  ["partial-" ++ x] ++ frame' (Chart' manifold xs point)
 
 interp' :: ScalarField -> Point -> Variable -> Dual Float
 interp' (ScalarField manifold chart mathexpr) point var =
