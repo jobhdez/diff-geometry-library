@@ -300,24 +300,6 @@ primalPart (Dual primal _) =
 dualPart :: Dual a -> a
 dualPart (Dual _ dual) =
   dual
-
-diff :: MathExpr -> String -> Float
-diff (Plus (Mul (Num n) x) (Var y)) "x"  =
-  -- with respect to x
-   let d1 = Dual n 1
-       d2 = Dual 1 0
-       d3 = Dual 2 0
-       d4 = (d1 + d2) + d3 in
-     dualPart d4
-  
-  
-diff (Plus (Mul n x) (Var y)) "y"  =
-  -- with respect to y
-  let d = Dual 1 1
-      d' =  Dual 1 0
-      d'' = d' * d
-      d''' = d'' + Dual 2 0 in
-    dualPart d'''
       
 subsetsMap :: Manifold -> Manifold -> Map.Map String Manifold ->  Map.Map String Manifold
 subsetsMap manifold manifoldSubset subsetsMap =
