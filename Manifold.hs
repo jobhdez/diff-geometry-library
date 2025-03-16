@@ -1,9 +1,48 @@
 module Manifold where
 
-import AutoDiff ( Dual(Dual) )
+import qualified Data.Map as Map
 
+{--
+based on my current code whhat are the decisons unresolved?
+    from just experiementing a bit its a hassle to to first construct
+the scalar field by first first construction the chart and then manifold.
+to much work. i need a better and easier way to mess with
+        scalar fields
+        vector fields and so on ie not friendly interface
+the sage manifolds library has optimizations, parallel programming.
+because some computations are expensive.
+so for the tensor stuff need to use mutable arrays.
+take a look at the ocaml paper. now the ocaml book binds the ocaml
+library to c. i can maybe target c code and maybe this is a good way
+to apply optimizations. dont know. but needs to fast.
+
+in order to get something up and running quickly i covered trivial
+cases. you can see my code and the sage code. the sage code is
+worthy of a library.
+    so you must generalize the any dimension
+    you need a proper way to organize your library
+
+you need to apply low level to haskell.
+
+when you constructing data what are you allocating?
+need to think in terms pf bytes etc. by using this you will
+improve performance.
+
+another decision i made was to just go from mathexp to dual number. but
+i didnt add a way to display the expression and i need to go from
+expression to expression as well.
+
+    
+also, the structure of the subset of diff geometry doesnt reflect
+with how its described.
+        so you would need to build some vector space library
+--}
+import AutoDiff ( Dual(Dual) )
+type Dimension = Int
+type Name = String
 data Manifold =
-  Manifold Int String String String [String]
+  Manifold Dimension Name
+  deriving Show
 
 data VectorField =
   VectorField [MathExpr]
@@ -12,10 +51,11 @@ data Vector =
   Vector [Float]
   deriving Show
 
+--data Subsets =
+ -- Subsets (Map.Map String Manifold)
+  
 type Coordinates = [String]
 type Point = [Float]
-
-type ManifoldName = String
 
 data Chart =
   Chart Manifold Coordinates Point
@@ -89,8 +129,9 @@ References:
 
   scalarField :: a -> Chart -> MathExpr -> ScalarField
   --constantScalarField :: a -> ConstantScalarField
-  openSubset :: a -> ManifoldName -> Coordinates -> a
+  openSubset :: a -> Manifold -> Map.Map String Manifold -> Map.Map String Manifold
   chart :: a -> Coordinates -> Point -> Chart
+  --subsets :: a -> [Manifold]
 
 -- given a chart on m, each point p in m is in the coordinate domain
 -- given a chart, the local map and set of functions (x1,x2,..xn)
@@ -132,6 +173,7 @@ class Chart a where
   frame :: a -> Coordinates -> Frame
   restrict :: a -> Manifold -> a
   transitionMap :: a -> a -> Restrictions -> Restrictions -> DiffCoordChange
+  function :: a -> Chart -> MathExpr
   jacobianMatrix :: a -> Coordinates -> Matrix 
   jacobianDet :: a -> Coordinates -> MatrixFunction
 --}
@@ -143,14 +185,10 @@ class VectorField a where
 --}
 instance TopologicalManifold Manifold where
   scalarField manifold chart fn = topologicalField manifold chart fn
-  openSubset manifold name coordinate = topologicalOpenSubset manifold name coordinate
+  openSubset manifold manifold' = topologicalOpenSubset manifold manifold'
   chart manifold coords map' = topologicalChart manifold coords map'
 
 instance SmoothManifold Manifold where
-  --scalarField manifold chart fn = topologicalField manifold chart fn
-  --openSubset manifold name coordinate = topologicalOpenSubset manifold name coordinate
-  --chart manifold coords map' = topologicalChart manifold coords map'
-  --tangentSpace manifold vectorFields point = tangentSpace' manifold vectorFields point
   tangentVector fields manifold point = makeTangentVector fields manifold point
 
 topologicalChart :: Manifold -> Coordinates -> Point -> Chart
@@ -176,15 +214,27 @@ topologicalField :: Manifold -> Chart -> MathExpr -> ScalarField
 topologicalField manifold chart fn =
   ScalarField manifold chart fn
 
-topologicalOpenSubset :: Manifold -> ManifoldName -> Coordinates -> Manifold
-topologicalOpenSubset (Manifold dimension name structure field _) name' coordinateRestriction =
+topologicalOpenSubset :: Manifold -> Manifold -> Map.Map String Manifold -> Map.Map String Manifold
+topologicalOpenSubset manifold manifold' subsets =
 {--
 If an U is an open subset of a manifold M then
 every element of U is also an element of M and U is in the
 topology of M.
+
+This means that if A and B are open subsets in M then
+subsets(M) = [A, B]
+
+if C is an open subset of A then
+
+subsets(A) = [A, C]
 --}
-  
-  Manifold dimension name' structure field coordinateRestriction
+  let subsets' = subsetsMap manifold manifold' subsets
+      subsets'' = subsetsMap manifold' manifold' subsets' in
+    subsets''
+
+getManifoldName :: Manifold -> String
+getManifoldName (Manifold dim name) =
+  name
 {--
 class PseudoRiemannMetric a where
   christoffel_symbols :: a -> Chart -> MathExpr
@@ -197,16 +247,15 @@ class PseudoRiemannMetric a where
   riemann :: a -> Tensor
   restrict :: a -> Restriction
 --}
+
 class TangentVector a where
   makeTangentVector :: Manifold -> a -> Point -> Vector
-  --directionalDiff :: a -> MathExpr -> Int
 
 instance TangentVector VectorField where
   makeTangentVector manifold vectorField point = makeTangentVector' manifold vectorField point
-  --directionalDiff mathExpr vector = directionalDiff' mathExpr vector
 
 manifoldDimension :: Manifold -> Int
-manifoldDimension (Manifold dimension _ _ _ _) =
+manifoldDimension (Manifold dimension _) =
   dimension
   
 makeTangentVector' :: Manifold -> VectorField -> Point -> Vector
@@ -252,15 +301,12 @@ diff (Plus (Mul n x) (Var y)) "y"  =
       d''' = d'' + Dual 2 0 in
     dualPart d'''
       
- {-- 
+subsetsMap :: Manifold -> Manifold -> Map.Map String Manifold ->  Map.Map String Manifold
+subsetsMap manifold manifoldSubset subsetsMap =
+  let name = getManifoldName manifold
+  in
+    Map.insert name manifoldSubset subsetsMap
   
-directionalDiff' :: VectorField -> Point -> Float
-directionalDiff' (VectorField expr) point =
-  -- you need generalize this, not only x and y
-  let diffx = diff expr "x"
-      diffy = diff expr "y"
-      e1 = head point
-      e2 = head (tail point) in
-    (e1 * diffx) + (e2 * diffy)
-  
---}
+
+
+
