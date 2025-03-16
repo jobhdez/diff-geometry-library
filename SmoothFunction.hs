@@ -12,15 +12,11 @@ import Manifold(
   Coordinates,
   MathExpr(Plus, Var, Num, Mul, Sin, Cos, Tan, Asin, Acos, Atan),
   primalPart,
-  dualPart
+  dualPart,
+  interp',
+  Tensor(...)
   )
-
-data Tensor =
-  Scalar Float
-  | Vector [Float]
-  | Tensor Tensor
   
-type Variable = String
 
 class SmoothFunction a where
   eval :: a -> Point -> Float
@@ -97,105 +93,3 @@ getX :: Point -> Float
 getX point =
   head (tail point)
   
-interp' :: ScalarField -> Point -> Variable -> Dual Float
-interp' (ScalarField manifold chart mathexpr) point var =
-  interp'' mathexpr point var
-  
-interp'' :: MathExpr -> Point -> Variable -> Dual Float
-interp'' (Num n) point var =
-  (Dual n 0)
-
-interp'' (Var v) (x:xs) var'' =
-  if v == var''
-  then
-    let d1 = (Dual x 1) * Dual 1 0
-        in
-      d1
-   else
-    Dual 1 0
-    
-interp'' (Plus e e2) (x:xs) var'' =
-  interp'' e (x:xs) var'' + interp'' e2 (x:xs) var''
-
-interp'' (Mul e e2) (x:xs) var'' =
-  interp'' e [x] var'' * interp'' e2 xs var''
-           
-interp'' (Sin (Var v)) (x:xs) var'' =
-  if v == var''
-  then
-    Dual (sin x) (cos x)
-  else
-    sin' (Dual x 0)
-
-interp'' (Sin (Num n)) (x:xs) var'' =
-  sin' (Dual n 0)
-
-interp'' (Sin e) (x:xs) var'' =
-  -- f(x) = sin(2 + x)
-  let e' = interp'' e (x:xs) var'' in
-    sin' e'
-
-interp'' (Cos (Var v)) (x:xs) var'' =
-  if v == var''
-  then
-    Dual (cos x) (negate (sin x))
-  else
-    cos' (Dual x 0)
-
-interp'' (Cos (Num n)) (x:xs) var'' =
-  cos' (Dual n 0)
-
-interp'' (Cos e) (x:xs) var'' =
-  -- f(x) = sin(2 + x)
-  let e' = interp'' e (x:xs) var'' in
-    cos' e'
-
-
-interp'' (Tan (Var v)) (x:xs) var'' =
-  if v == var''
-  then
-    Dual (tan x) ((1 / (cos x)) ** 2)
-  else
-    tan' (Dual x 0)
-    
-interp'' (Tan e) (x:xs) var'' =
-  let e' = interp'' e (x:xs) var'' in
-    tan' e'
-    
-interp'' (Asin (Num n)) (x:xs) var'' =
-  asin' (Dual n 0)
-
-interp'' (Asin (Var v)) (x:xs) var'' =
-  if v == var''
-  then
-    Dual (asin x) (acos x)
-  else
-    asin' (Dual x 0)
-  
-interp'' (Asin e) (x:xs) var'' =
-  -- f(x) = sin(2 + x)
-  let e' = interp'' e (x:xs) var'' in
-    asin' e'
-
-interp'' (Acos (Num n)) (x:xs) var'' =
-  acos' (Dual n 0)
-
-interp'' (Acos (Var v)) (x:xs) var'' =
-  if v == var''
-  then
-    Dual (acos x) (negate (asin x))
-  else
-    acos' (Dual x 0)
-
-interp'' (Atan (Num n)) (x:xs) var'' =
-  atan' (Dual n 0)
-
-interp'' (Atan (Var v)) (x:xs) var'' =
-  if v == var''
-  then
-    (Dual (atan x) ((acos (1 / x)) ** 2))
-   else
-    atan' (Dual x 0)
-  
-
-

@@ -1,6 +1,7 @@
 module Manifold where
 
 import qualified Data.Map as Map
+import AutoDiff (Dual(Dual), sin', cos', tan', asin', acos', atan')
 
 {--
 based on my current code whhat are the decisons unresolved?
@@ -38,18 +39,27 @@ with how its described.
         so you would need to build some vector space library
 --}
 import AutoDiff ( Dual(Dual) )
+
+data Tensor =
+  Scalar Float
+  | Vector [Float]
+  | Matrix [[Float]]
+  | Tensor Tensor
+  
 type Dimension = Int
 type Name = String
+
 data Manifold =
   Manifold Dimension Name
   deriving Show
 
 data VectorField =
   VectorField [MathExpr]
-
-data Vector =
+  
+type Variable = String
+{--data Vector =
   Vector [Float]
-  deriving Show
+  deriving Show--}
 
 --data Subsets =
  -- Subsets (Map.Map String Manifold)
@@ -156,7 +166,7 @@ References:
 [2] Sage Manifolds
 --}
 
-  tangentVector :: a -> VectorField -> Point -> Vector
+  tangentVector :: a -> VectorField -> Point -> Tensor
 {--
 class TangentSpace a where
   tangetVectors :: [a] -> Point -> ([a], Point)
@@ -177,7 +187,7 @@ class Chart a where
   --restrict :: a -> Manifold -> a
   transitionMap :: a -> a -> [MathExpr] -> Coordinates
   --function :: a -> Chart -> MathExpr
-  --jacobianMatrix :: a -> Coordinates -> Matrix 
+  jacobianMatrix :: a -> Tensor
   --jacobianDet :: a -> Coordinates -> MatrixFunction
 
 {--
@@ -189,6 +199,7 @@ class VectorField a where
 
 instance Chart Chart' where
   transitionMap chart chart' = transitionMap' chart chart
+  jacobianMatrix chart = jacobianMatrix' chart
   
 instance TopologicalManifold Manifold where
   scalarField manifold chart fn = topologicalField manifold chart fn
@@ -256,7 +267,7 @@ class PseudoRiemannMetric a where
 --}
 
 class TangentVector a where
-  makeTangentVector :: Manifold -> a -> Point -> Vector
+  makeTangentVector :: Manifold -> a -> Point -> Tensor
 
 instance TangentVector VectorField where
   makeTangentVector manifold vectorField point = makeTangentVector' manifold vectorField point
@@ -265,7 +276,7 @@ manifoldDimension :: Manifold -> Int
 manifoldDimension (Manifold dimension _) =
   dimension
   
-makeTangentVector' :: Manifold -> VectorField -> Point -> Vector
+makeTangentVector' :: Manifold -> VectorField -> Point -> Tensor
 makeTangentVector' manifold (VectorField fields)  point =
   -- f(x,y) = 2x + y
   -- f(2,1) = 5
@@ -321,4 +332,118 @@ transitionMap' chart chart' mathexprs =
   let coordinates = getCoordinates chart
       coordinates' = getCoordinates chart' in
     map (\(x,y) -> Eq x y) $ zip   coordinates' mathexprs
+
+
+jacobianMatrix' :: Chart' -> Tensor
+jacobianMatrix' chart  =
+  let coordinates = getCoordinates chart
+      point = getPoint chart
+      jacobian = diff' coordinates point in
+    Matrix jacobian
+
+diff' :: Coordinates -> Point ->  [[Float]]
+diff' [] _ = []
+diff' (x:xs) point =
+  [dualPart (interp'' x point "x"), dualPart (interp'' x point "y")] :  diff' xs point
+
+interp' :: ScalarField -> Point -> Variable -> Dual Float
+interp' (ScalarField manifold chart mathexpr) point var =
+  interp'' mathexpr point var
+  
+interp'' :: MathExpr -> Point -> Variable -> Dual Float
+interp'' (Num n) point var =
+  (Dual n 0)
+
+interp'' (Var v) (x:xs) var'' =
+  if v == var''
+  then
+    let d1 = (Dual x 1) * Dual 1 0
+        in
+      d1
+   else
+    Dual 1 0
     
+interp'' (Plus e e2) (x:xs) var'' =
+  interp'' e (x:xs) var'' + interp'' e2 (x:xs) var''
+
+interp'' (Mul e e2) (x:xs) var'' =
+  interp'' e [x] var'' * interp'' e2 xs var''
+           
+interp'' (Sin (Var v)) (x:xs) var'' =
+  if v == var''
+  then
+    Dual (sin x) (cos x)
+  else
+    sin' (Dual x 0)
+
+interp'' (Sin (Num n)) (x:xs) var'' =
+  sin' (Dual n 0)
+
+interp'' (Sin e) (x:xs) var'' =
+  -- f(x) = sin(2 + x)
+  let e' = interp'' e (x:xs) var'' in
+    sin' e'
+
+interp'' (Cos (Var v)) (x:xs) var'' =
+  if v == var''
+  then
+    Dual (cos x) (negate (sin x))
+  else
+    cos' (Dual x 0)
+
+interp'' (Cos (Num n)) (x:xs) var'' =
+  cos' (Dual n 0)
+
+interp'' (Cos e) (x:xs) var'' =
+  -- f(x) = sin(2 + x)
+  let e' = interp'' e (x:xs) var'' in
+    cos' e'
+
+
+interp'' (Tan (Var v)) (x:xs) var'' =
+  if v == var''
+  then
+    Dual (tan x) ((1 / (cos x)) ** 2)
+  else
+    tan' (Dual x 0)
+    
+interp'' (Tan e) (x:xs) var'' =
+  let e' = interp'' e (x:xs) var'' in
+    tan' e'
+    
+interp'' (Asin (Num n)) (x:xs) var'' =
+  asin' (Dual n 0)
+
+interp'' (Asin (Var v)) (x:xs) var'' =
+  if v == var''
+  then
+    Dual (asin x) (acos x)
+  else
+    asin' (Dual x 0)
+  
+interp'' (Asin e) (x:xs) var'' =
+  -- f(x) = sin(2 + x)
+  let e' = interp'' e (x:xs) var'' in
+    asin' e'
+
+interp'' (Acos (Num n)) (x:xs) var'' =
+  acos' (Dual n 0)
+
+interp'' (Acos (Var v)) (x:xs) var'' =
+  if v == var''
+  then
+    Dual (acos x) (negate (asin x))
+  else
+    acos' (Dual x 0)
+
+interp'' (Atan (Num n)) (x:xs) var'' =
+  atan' (Dual n 0)
+
+interp'' (Atan (Var v)) (x:xs) var'' =
+  if v == var''
+  then
+    (Dual (atan x) ((acos (1 / x)) ** 2))
+   else
+    atan' (Dual x 0)
+  
+
