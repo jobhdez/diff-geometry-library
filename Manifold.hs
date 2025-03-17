@@ -219,6 +219,9 @@ instance SmoothManifold Manifold where
 
 differential' :: Manifold -> Manifold -> [MathExpr] -> Point -> Tensor
 differential' m1 m2 expr p1 =
+  -- a differential of a smooth map is just a map from tangent spaces.
+  -- so, given a tangent space to M at point p, a differential is a  map
+  -- between this tanget space to another tanget space to N at point f(p)
   let chart = getManifoldChart m1
       coordinates = getCoordinates chart
       diff' = differential'' expr p1  coordinates
