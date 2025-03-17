@@ -45,12 +45,13 @@ data Tensor =
   | Vector [Float]
   | Matrix [[Float]]
   | Tensor Tensor
+  deriving Show
   
 type Dimension = Int
 type Name = String
 
 data Manifold =
-  Manifold Dimension Name
+  Manifold Dimension Name Chart'
   deriving Show
 
 data VectorField =
@@ -68,15 +69,15 @@ type Coordinates = [MathExpr]
 type Point = [Float]
 
 data Chart' =
-  Chart' Manifold Coordinates Point
+  Chart' Coordinates Point
   deriving Show
 
 getPoint :: Chart' -> [Float]
-getPoint (Chart' manifold coord point) =
+getPoint (Chart' coord point) =
   point
   
 getCoordinates :: Chart' -> [MathExpr]
-getCoordinates (Chart' manifold coord point) =
+getCoordinates (Chart' coord point) =
   coord
 data ScalarField =
   ScalarField Manifold Chart' MathExpr
@@ -143,7 +144,6 @@ References:
   scalarField :: a -> Chart' -> MathExpr -> ScalarField
   --constantScalarField :: a -> ConstantScalarField
   openSubset :: a -> Manifold -> Map.Map String Manifold -> Map.Map String Manifold
-  chart :: a -> Coordinates -> Point -> Chart'
   --subsets :: a -> [Manifold]
 
 -- given a chart on m, each point p in m is in the coordinate domain
@@ -167,6 +167,7 @@ References:
 --}
 
   tangentVector :: a -> VectorField -> Point -> Tensor
+  differential :: a -> a -> [MathExpr] -> Point -> Tensor
 {--
 class TangentSpace a where
   tangetVectors :: [a] -> Point -> ([a], Point)
@@ -176,12 +177,16 @@ instance TangentSpace TangentVectors where
 --}
 {--
 class SmoothMap a where
-  differential :: a -> Point -> Morphism
-  jacobianMatrix :: a -> Chart -> Chart -> Matrix
-  pullBack :: a -> Tensor -> Tensor
-  pushForward :: a -> Tensor -> Tensor
+  differential :: a -> a -> MathExpr -> Point -> Tensor
+  --jacobianMatrix :: a -> Chart -> Chart -> Matrix
+  --pullBack :: a -> Tensor -> Tensor
+  --pushForward :: a -> Tensor -> Tensor
 --}
-
+{--
+instance SmoothMap Manifold where
+  differential m1 m2 expr p1 = differential'' m1 m2 expr p1
+--}
+  
 class Chart a where
   frame :: a -> [String]
   --restrict :: a -> Manifold -> a
@@ -206,11 +211,33 @@ instance Chart Chart' where
 instance TopologicalManifold Manifold where
   scalarField manifold chart fn = topologicalField manifold chart fn
   openSubset manifold manifold' = topologicalOpenSubset manifold manifold'
-  chart manifold coords map' = topologicalChart manifold coords map'
+  --chart manifold coords map' = topologicalChart manifold coords map'
 
 instance SmoothManifold Manifold where
   tangentVector fields manifold point = makeTangentVector fields manifold point
+  differential m1 m2 mathexpr p1 = differential' m1 m2 mathexpr p1
 
+differential' :: Manifold -> Manifold -> [MathExpr] -> Point -> Tensor
+differential' m1 m2 expr p1 =
+  let chart = getManifoldChart m1
+      coordinates = getCoordinates chart
+      diff' = differential'' expr p1  coordinates
+      in
+    Matrix diff'
+
+differential'' :: [MathExpr] -> Point -> Coordinates -> [[Float]]
+differential'' [] p1 coords = []
+differential'' (e:es) p1 coords =
+ [differential''' e p1 coords] ++ differential'' es p1 coords
+ 
+differential''' :: MathExpr -> Point -> Coordinates -> [Float]
+differential''' e p1 [] = []
+differential''' e p1 (Var x:xs) =
+  [dualPart (interp'' e p1 x)] ++ differential''' e p1 xs
+    
+getManifoldChart :: Manifold -> Chart'
+getManifoldChart (Manifold dim name chart) =
+  chart 
 topologicalChart :: Manifold -> Coordinates -> Point -> Chart'
 topologicalChart manifold coordinates points =
 {--
@@ -228,7 +255,7 @@ of the map map(p') = (x1(p), x2(p), ..xn(p))
 
 --}
 
-  Chart' manifold coordinates points
+  Chart' coordinates points
 
 topologicalField :: Manifold -> Chart' -> MathExpr -> ScalarField
 topologicalField manifold chart fn =
@@ -253,7 +280,7 @@ subsets(A) = [A, C]
     subsets''
 
 getManifoldName :: Manifold -> String
-getManifoldName (Manifold dim name) =
+getManifoldName (Manifold dim name chart) =
   name
 {--
 class PseudoRiemannMetric a where
@@ -275,7 +302,7 @@ instance TangentVector VectorField where
   makeTangentVector manifold vectorField point = makeTangentVector' manifold vectorField point
 
 manifoldDimension :: Manifold -> Int
-manifoldDimension (Manifold dimension _) =
+manifoldDimension (Manifold dimension _ _) =
   dimension
   
 makeTangentVector' :: Manifold -> VectorField -> Point -> Tensor
@@ -331,9 +358,9 @@ diff' (x:xs) point =
   [dualPart (interp'' x point "x"), dualPart (interp'' x point "y")] :  diff' xs point
 
 frame' :: Chart' -> [String]
-frame' (Chart' manifold [] point) = []
-frame' (Chart' manifold (Var x:xs) point) =
-  ["partial-" ++ x] ++ frame' (Chart' manifold xs point)
+frame' (Chart' [] point) = []
+frame' (Chart' (Var x:xs) point) =
+  ["partial-" ++ x] ++ frame' (Chart' xs point)
 
 function' :: Chart' ->  Point -> MathExpr -> Float
 function' chart (x:xs) mathexpr =
