@@ -186,7 +186,7 @@ class Chart a where
   frame :: a -> [String]
   --restrict :: a -> Manifold -> a
   transitionMap :: a -> a -> [MathExpr] -> Coordinates
-  --function :: a -> Chart -> MathExpr
+  function :: a -> Point -> MathExpr ->  Float
   jacobianMatrix :: a -> Tensor
   --jacobianDet :: a -> Coordinates -> MatrixFunction
 
@@ -201,6 +201,7 @@ instance Chart Chart' where
   transitionMap chart chart' = transitionMap' chart chart
   jacobianMatrix chart = jacobianMatrix' chart
   frame chart = frame' chart
+  function chart point mathexpr = function' chart point mathexpr
   
 instance TopologicalManifold Manifold where
   scalarField manifold chart fn = topologicalField manifold chart fn
@@ -334,6 +335,16 @@ frame' (Chart' manifold [] point) = []
 frame' (Chart' manifold (Var x:xs) point) =
   ["partial-" ++ x] ++ frame' (Chart' manifold xs point)
 
+function' :: Chart' ->  Point -> MathExpr -> Float
+function' chart (x:xs) mathexpr =
+  let coordinates = getCoordinates chart in
+    function'' mathexpr (x:xs) coordinates
+
+function'' :: MathExpr -> Point -> Coordinates -> Float
+function'' expr point []  = 0.0
+function'' expr (y:ys) (Var x:xs) =
+  primalPart (interp'' expr [y]  x) + function'' expr ys xs
+
 interp' :: ScalarField -> Point -> Variable -> Dual Float
 interp' (ScalarField manifold chart mathexpr) point var =
   interp'' mathexpr point var
@@ -341,7 +352,7 @@ interp' (ScalarField manifold chart mathexpr) point var =
 interp'' :: MathExpr -> Point -> Variable -> Dual Float
 interp'' (Num n) point var =
   (Dual n 0)
-
+  
 interp'' (Var v) (x:xs) var'' =
   if v == var''
   then
@@ -349,7 +360,7 @@ interp'' (Var v) (x:xs) var'' =
         in
       d1
    else
-    Dual 1 0
+    Dual 0 0
     
 interp'' (Plus e e2) (x:xs) var'' =
   interp'' e (x:xs) var'' + interp'' e2 (x:xs) var''
