@@ -1,7 +1,7 @@
 module Manifold where
 
 import qualified Data.Map as Map
-import AutoDiff (Dual(Dual), sin', cos', tan', asin', acos', atan')
+import AutoDiff (Dual(Dual), sin', cos', tan', asin', acos', atan', pow')
 
 {--
 based on my current code whhat are the decisons unresolved?
@@ -91,6 +91,7 @@ data MathExpr =
   Var String
   | Num Float
   | Plus MathExpr MathExpr
+  | Minus MathExpr MathExpr
   | Mul MathExpr MathExpr
   | Division MathExpr MathExpr
   | Sin MathExpr
@@ -169,7 +170,8 @@ References:
 
   tangentVector :: a -> VectorField -> Point -> Tensor
   differential :: a -> a -> [MathExpr] -> Point -> Tensor
-  christoffelSymbols :: a -> [[MathExpr]] -> Coordinates ->  [[Float]]
+  christoffelSymbols :: a -> [[MathExpr]] -> Coordinates ->  [[[Float]]]
+  --riemannTensor :: a -> [[MathExpr]] -> [[[[Float]]]]
 {--
 class TangentSpace a where
   tangetVectors :: [a] -> Point -> ([a], Point)
@@ -219,16 +221,61 @@ instance SmoothManifold Manifold where
   tangentVector fields manifold point = makeTangentVector fields manifold point
   differential m1 m2 mathexpr p1 = differential' m1 m2 mathexpr p1
   christoffelSymbols m1 metric coords = christoffelSymbols'' m1 metric coords
+  --riemannTensor m1 metric = riemannTensor' m1 metric
 
+riemannTensor' :: Manifold -> [[MathExpr]] -> [[[[Float]]]]
+riemannTensor' m1 metric =
+  let coords = getCoordinates (getManifoldChart m1)
+      christoffelSymbolss = christoffelSymbols'' m1 metric coords
+  in
+    riemannTensor'' metric christoffelSymbolss coords
 
-christoffelSymbols'' :: Manifold -> [[MathExpr]] -> Coordinates -> [[Float]]
+riemannTensor'' :: [[MathExpr]] -> [[[Float]]] -> Coordinates -> [[[[Float]]]]
+riemannTensor'' metric cfsymbols coords =
+  let
+    r00 = riemannTensor''' metric cfsymbols coords 0 0 0 0 0
+    r01 = riemannTensor''' metric cfsymbols coords 0 0 1 0 0
+    r02 = riemannTensor''' metric cfsymbols coords 0 0 2 0 0
+    r03 = riemannTensor''' metric cfsymbols coords 0 0 3 0 0
+    r10 = riemannTensor''' metric cfsymbols coords 0 1 0 0 0
+    r11 = riemannTensor''' metric cfsymbols coords 0 1 1 0 0
+    r12 = riemannTensor''' metric cfsymbols coords 0 1 2 0 0
+    r13 = riemannTensor''' metric cfsymbols coords 0 1 3 0 0
+    r20 = riemannTensor''' metric cfsymbols coords 0 2 0 0 0
+    r21 = riemannTensor''' metric cfsymbols coords 0 2 1 0 0
+    r22 = riemannTensor''' metric cfsymbols coords 0 2 2 0 0
+    r23 = riemannTensor''' metric cfsymbols coords 0 2 3 0 0
+    r30 = riemannTensor''' metric cfsymbols coords 0 3 0 0 0
+    r31 = riemannTensor''' metric cfsymbols coords 0 3 1 0 0
+    r32 = riemannTensor''' metric cfsymbols coords 0 3 2 0 0
+    r33 = riemannTensor''' metric cfsymbols coords 0 3 3 0 0
+  in
+    [[r00, r01, r02, r03]
+    ,[r10, r11, r12, r13]
+    ,[r20, r21, r22, r23]
+    ,[r30, r31, r32, r33]
+    ]
+riemannTensor''' :: [[MathExpr]] -> [[[Float]]] -> Coordinates -> Int -> Int -> Int -> Int -> Int -> [[Float]]
+riemannTensor''' metric cfs coords a b c d r =
+  if d < length coords
+  then
+    let d1 = dualPart (interp'' (cf cfs b d a) [0.0,0.0,0.0] (xv coords c))
+        d2 = dualPart (interp'' (cf cfs b c a) [0.0,0.0,0.0] (xv coords d))
+        d3 = (cf cfs a d r) * (cf cfs r b c)
+        d4 = (cf cfs a c r) * (cf cfs r b d)
+        in
+      [[d1,d2,d3,d4]] ++ riemannTensor''' metric cfs coords a b c (d + 1) (r + 1)
+  else
+    []
+
+christoffelSymbols'' :: Manifold -> [[MathExpr]] -> Coordinates -> [[[Float]]]
 christoffelSymbols'' m1 exps coords =
   -- must generalize this to any dimension
   -- works on 3 dimensions
   let inverse = invertMatrix exps in
-    [christoffelSymbols' m1 exps coords 0 0 0] ++ [christoffelSymbols' m1 exps coords 0 1 0] ++ [christoffelSymbols' m1 exps coords 0 2 0] ++ [christoffelSymbols' m1 inverse coords 0 0 0] ++ [christoffelSymbols' m1 inverse coords 0 1 0] ++ [christoffelSymbols' m1 inverse coords 0 2 0]
-  
-  
+    [[christoffelSymbols' m1 exps coords 0 0 0] ++ [christoffelSymbols' m1 exps coords 0 1 0] ++ [christoffelSymbols' m1 exps coords 0 2 0]] ++ [[christoffelSymbols' m1 inverse coords 0 0 0] ++ [christoffelSymbols' m1 inverse coords 0 1 0] ++ [christoffelSymbols' m1 inverse coords 0 2 0]]
+
+
 christoffelSymbols' :: Manifold -> [[MathExpr]] -> Coordinates -> Int -> Int -> Int -> [Float]
 christoffelSymbols' m [] [] a b c = []
 christoffelSymbols' manifold exps coords a b c =
@@ -257,6 +304,11 @@ invertmatrix' (x:xs) =
 g :: [[MathExpr]] -> Int -> Int -> MathExpr
 g exps row col =
   (exps !! row) !! col
+
+cf :: [[[Float]]] -> Int -> Int -> Int -> Float
+cf exps a b c =
+  (((exps !! a) !! b) !! c)
+  
 xv :: Coordinates -> Int -> String
 xv coords row =
   let row' = coords !! row in
@@ -338,6 +390,7 @@ subsets(A) = [A, C]
 getManifoldName :: Manifold -> String
 getManifoldName (Manifold dim name chart) =
   name
+
 {--
 class PseudoRiemannMetric a where
   christoffel_symbols :: a -> Chart -> MathExpr
@@ -448,12 +501,18 @@ interp'' (Var v) (x:xs) var'' =
 interp'' (Plus e e2) (x:xs) var'' =
   interp'' e (x:xs) var'' + interp'' e2 (x:xs) var''
 
+interp'' (Minus e e2) (x:xs) var'' =
+  interp'' e (x:xs) var'' - interp'' e2 (x:xs) var''
+
 interp'' (Mul e e2) (x:xs) var'' =
   let d1 = interp'' e (x:xs) var''
       d2 = interp'' e2 (x:xs) var''
       in
     d1 * d2
-
+    
+interp'' (Power e e2) (x:xs) var'' =
+  pow' (interp'' e (x:xs) var'') (interp'' e2 (x:xs) var'')
+  
 interp'' (Division e e2) (x:xs) var'' =
   let d1 = interp'' e (x:xs) var''
       d2 = interp'' e2 (x:xs) var''
