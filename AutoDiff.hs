@@ -153,8 +153,8 @@ dualExp (Dual p1 d1) =
 dualLn (Dual p1 d1) =
   Dual (log p1) (d1 / p1)
 
-dualPower dual1 dual2 =
-  (exp' (dual2 * (ln' dual1)))
+dualPower (Dual p1 d1) (Dual p2 d2) =
+  Dual (p1 ** p2) ((p2 * d1) * (p1 ** (p2 - 1.0)))
 
 dualLog dual1 dual2 =
   (ln' dual2) / (ln' dual1)
