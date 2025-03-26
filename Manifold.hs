@@ -92,6 +92,7 @@ data MathExpr =
   | Num Float
   | Plus MathExpr MathExpr
   | Mul MathExpr MathExpr
+  | Division MathExpr MathExpr
   | Sin MathExpr
   | Cos MathExpr
   | Tan MathExpr
@@ -168,6 +169,7 @@ References:
 
   tangentVector :: a -> VectorField -> Point -> Tensor
   differential :: a -> a -> [MathExpr] -> Point -> Tensor
+  christoffelSymbols :: a -> [[MathExpr]] -> Coordinates ->  [[Float]]
 {--
 class TangentSpace a where
   tangetVectors :: [a] -> Point -> ([a], Point)
@@ -216,7 +218,58 @@ instance TopologicalManifold Manifold where
 instance SmoothManifold Manifold where
   tangentVector fields manifold point = makeTangentVector fields manifold point
   differential m1 m2 mathexpr p1 = differential' m1 m2 mathexpr p1
+  christoffelSymbols m1 metric coords = christoffelSymbols'' m1 metric coords
 
+
+christoffelSymbols'' :: Manifold -> [[MathExpr]] -> Coordinates -> [[Float]]
+christoffelSymbols'' m1 exps coords =
+  -- must generalize this to any dimension
+  -- works on 3 dimensions
+  let inverse = invertMatrix exps in
+    [christoffelSymbols' m1 exps coords 0 0 0] ++ [christoffelSymbols' m1 exps coords 0 1 0] ++ [christoffelSymbols' m1 exps coords 0 2 0] ++ [christoffelSymbols' m1 inverse coords 0 0 0] ++ [christoffelSymbols' m1 inverse coords 0 1 0] ++ [christoffelSymbols' m1 inverse coords 0 2 0]
+  
+  
+christoffelSymbols' :: Manifold -> [[MathExpr]] -> Coordinates -> Int -> Int -> Int -> [Float]
+christoffelSymbols' m [] [] a b c = []
+christoffelSymbols' manifold exps coords a b c =
+  if c < length coords then
+    let d1 = dualPart (interp'' (g exps a a) [0.0,0.0,0.0] (xv coords c))
+        d2 = dualPart (interp'' (g exps a c) [0.0,0.0,0.0] (xv coords b))
+        d3 = dualPart (interp'' (g exps b c) [0.0,0.0,0.0] (xv coords a))
+    in
+      [1/2 * (d1 + d2 - d3)] ++ christoffelSymbols' manifold exps coords a b (c + 1)
+  else
+    []
+    
+invertMatrix :: [[MathExpr]] -> [[MathExpr]]
+invertMatrix [] = []
+invertMatrix (x:xs) =
+  [invertmatrix' x] ++ invertMatrix xs
+
+invertmatrix' :: [MathExpr] -> [MathExpr]
+invertmatrix' [] = []
+invertmatrix' (x:xs) =
+  case x of
+    Num 0 -> [Num 0] ++ invertmatrix' xs
+    Num 1 -> [Num 1] ++ invertmatrix' xs
+    _ -> [Division (Num 1) x] ++ invertmatrix' xs
+    
+g :: [[MathExpr]] -> Int -> Int -> MathExpr
+g exps row col =
+  (exps !! row) !! col
+xv :: Coordinates -> Int -> String
+xv coords row =
+  let row' = coords !! row in
+    getCoord row'
+
+getCoord :: MathExpr -> String
+getCoord (Var coord) =
+  coord
+{--
+christoffelSymbolHelper :: [MathExpr] -> Coordinates -> [Float]
+christoffelSymbolHelper exp (y:ys) =
+  --}
+  
 differential' :: Manifold -> Manifold -> [MathExpr] -> Point -> Tensor
 differential' m1 m2 expr p1 =
   -- a differential of a smooth map is just a map from tangent spaces.
@@ -396,8 +449,17 @@ interp'' (Plus e e2) (x:xs) var'' =
   interp'' e (x:xs) var'' + interp'' e2 (x:xs) var''
 
 interp'' (Mul e e2) (x:xs) var'' =
-  interp'' e [x] var'' * interp'' e2 xs var''
-           
+  let d1 = interp'' e (x:xs) var''
+      d2 = interp'' e2 (x:xs) var''
+      in
+    d1 * d2
+
+interp'' (Division e e2) (x:xs) var'' =
+  let d1 = interp'' e (x:xs) var''
+      d2 = interp'' e2 (x:xs) var''
+      in
+    d1 / d2
+  
 interp'' (Sin (Var v)) (x:xs) var'' =
   if v == var''
   then
