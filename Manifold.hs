@@ -44,7 +44,7 @@ data Tensor =
   Scalar Float
   | Vector [Float]
   | Matrix [[Float]]
-  | Tensor Tensor
+  | Tensor [Tensor]
   deriving Show
   
 type Dimension = Int
@@ -170,7 +170,7 @@ References:
 
   tangentVector :: a -> VectorField -> Point -> Tensor
   differential :: a -> a -> [MathExpr] -> Point -> Tensor
-  christoffelSymbols :: a -> [[MathExpr]] -> Coordinates ->  [[[Float]]]
+  christoffelSymbols :: a -> [[MathExpr]] -> Coordinates ->  [[[MathExpr]]]
   --riemannTensor :: a -> [[MathExpr]] -> [[[[Float]]]]
 {--
 class TangentSpace a where
@@ -223,14 +223,14 @@ instance SmoothManifold Manifold where
   christoffelSymbols m1 metric coords = christoffelSymbols'' m1 metric coords
   --riemannTensor m1 metric = riemannTensor' m1 metric
 
-riemannTensor' :: Manifold -> [[MathExpr]] -> [[[[Float]]]]
+riemannTensor' :: Manifold -> [[MathExpr]] -> [[[[MathExpr]]]]
 riemannTensor' m1 metric =
   let coords = getCoordinates (getManifoldChart m1)
       christoffelSymbolss = christoffelSymbols'' m1 metric coords
   in
     riemannTensor'' metric christoffelSymbolss coords
 
-riemannTensor'' :: [[MathExpr]] -> [[[Float]]] -> Coordinates -> [[[[Float]]]]
+riemannTensor'' :: [[MathExpr]] -> [[[MathExpr]]] -> Coordinates -> [[[[MathExpr]]]]
 riemannTensor'' metric cfsymbols coords =
   let
     r00 = riemannTensor''' metric cfsymbols coords 0 0 0 0 0
@@ -255,27 +255,27 @@ riemannTensor'' metric cfsymbols coords =
     ,[r20, r21, r22, r23]
     ,[r30, r31, r32, r33]
     ]
-riemannTensor''' :: [[MathExpr]] -> [[[Float]]] -> Coordinates -> Int -> Int -> Int -> Int -> Int -> [[Float]]
+riemannTensor''' :: [[MathExpr]] -> [[[MathExpr]]] -> Coordinates -> Int -> Int -> Int -> Int -> Int -> [[MathExpr]]
 riemannTensor''' metric cfs coords a b c d r =
   if d < length coords
   then
-    let d1 = dualPart (interp'' (cf cfs b d a) [0.0,0.0,0.0] (xv coords c))
-        d2 = dualPart (interp'' (cf cfs b c a) [0.0,0.0,0.0] (xv coords d))
-        d3 = (cf cfs a d r) * (cf cfs r b c)
-        d4 = (cf cfs a c r) * (cf cfs r b d)
+    let d1 = deriv (cf cfs b d a) (xv coords c)
+        d2 = deriv (cf cfs b c a) (xv coords d)
+        d3 = Mul (cf cfs a d r) (cf cfs r b c)
+        d4 = Mul (cf cfs a c r) (cf cfs r b d)
         in
       [[d1,d2,d3,d4]] ++ riemannTensor''' metric cfs coords a b c (d + 1) (r + 1)
   else
     []
 
-christoffelSymbols'' :: Manifold -> [[MathExpr]] -> Coordinates -> [[[Float]]]
+christoffelSymbols'' :: Manifold -> [[MathExpr]] -> Coordinates -> [[[MathExpr]]]
 christoffelSymbols'' m1 exps coords =
   -- must generalize this to any dimension
   -- works on 3 dimensions
   let inverse = invertMatrix exps in
     [[christoffelSymbols' m1 exps coords 0 0 0] ++ [christoffelSymbols' m1 exps coords 0 1 0] ++ [christoffelSymbols' m1 exps coords 0 2 0]] ++ [[christoffelSymbols' m1 inverse coords 0 0 0] ++ [christoffelSymbols' m1 inverse coords 0 1 0] ++ [christoffelSymbols' m1 inverse coords 0 2 0]]
 
-
+{--
 christoffelSymbols' :: Manifold -> [[MathExpr]] -> Coordinates -> Int -> Int -> Int -> [Float]
 christoffelSymbols' m [] [] a b c = []
 christoffelSymbols' manifold exps coords a b c =
@@ -287,7 +287,19 @@ christoffelSymbols' manifold exps coords a b c =
       [1/2 * (d1 + d2 - d3)] ++ christoffelSymbols' manifold exps coords a b (c + 1)
   else
     []
-    
+ --}
+
+christoffelSymbols' :: Manifold -> [[MathExpr]] -> Coordinates -> Int -> Int -> Int -> [MathExpr]
+christoffelSymbols' m [] [] a b c = []
+christoffelSymbols' manifold exps coords a b c =
+  if c < length coords then
+    let d1 = deriv (g exps a a) (xv coords c)
+        d2 = deriv (g exps a c) (xv coords b)
+        d3 = deriv (g exps b c) (xv coords a)
+    in
+      [Mul (Division (Num 1) (Num 2)) (Minus (Plus d1 d2) d3)] ++ christoffelSymbols' manifold exps coords a b (c + 1)
+  else
+    []
 invertMatrix :: [[MathExpr]] -> [[MathExpr]]
 invertMatrix [] = []
 invertMatrix (x:xs) =
@@ -305,14 +317,14 @@ g :: [[MathExpr]] -> Int -> Int -> MathExpr
 g exps row col =
   (exps !! row) !! col
 
-cf :: [[[Float]]] -> Int -> Int -> Int -> Float
+cf :: [[[MathExpr]]] -> Int -> Int -> Int -> MathExpr
 cf exps a b c =
   (((exps !! a) !! b) !! c)
   
-xv :: Coordinates -> Int -> String
+xv :: Coordinates -> Int -> MathExpr
 xv coords row =
   let row' = coords !! row in
-    getCoord row'
+    row'
 
 getCoord :: MathExpr -> String
 getCoord (Var coord) =
@@ -596,4 +608,22 @@ interp'' (Atan (Var v)) (x:xs) var'' =
    else
     atan' (Dual x 0)
   
+deriv :: MathExpr -> MathExpr -> MathExpr
+deriv (Num n) var = Num 0
+deriv (Var v) (Var var) = if v==var then Num 1 else Num 0
+deriv (Plus e e2) var = Plus (deriv e var) (deriv e2 var)
+deriv (Minus e e2) var = Minus (deriv e var) (deriv e2 var)
+deriv (Mul e e2) var =
+  Plus (Mul (deriv e var) e2) (Mul e (deriv e2 var))
+deriv (Division e e2) var =
+  Division (Minus (Mul (deriv e var) e2) (Mul e (deriv e2 var))) (Power e2 (Num 2))
 
+deriv (Power (Var e) (Num n)) var =
+  (Mul (Num n) (Power (Var e) (Num (n-1))))
+  
+deriv (Power (Sin (Var n)) (Num n')) var =
+  Sin (Mul (Var n) (Num n'))
+  
+deriv (Sin e) var =
+  let e' = deriv e var in
+    Cos e'
