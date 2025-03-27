@@ -172,6 +172,7 @@ References:
   differential :: a -> a -> [MathExpr] -> Point -> Tensor
   christoffelSymbols :: a -> [[MathExpr]] -> Coordinates ->  [[[MathExpr]]]
   riemannTensor :: a -> [[MathExpr]] -> [[[[MathExpr]]]]
+  ricciTensor :: a -> [[[[MathExpr]]]] -> [[MathExpr]]
 {--
 class TangentSpace a where
   tangetVectors :: [a] -> Point -> ([a], Point)
@@ -220,9 +221,20 @@ instance TopologicalManifold Manifold where
 instance SmoothManifold Manifold where
   tangentVector fields manifold point = makeTangentVector fields manifold point
   differential m1 m2 mathexpr p1 = differential' m1 m2 mathexpr p1
+  -- pseudu riemman
   christoffelSymbols m1 metric coords = christoffelSymbols'' m1 metric coords
   riemannTensor m1 metric = riemannTensor' m1 metric
+  ricciTensor m1 metric = ricciTensor' m1 metric
 
+ricciTensor' :: Manifold -> [[[[MathExpr]]]] -> [[MathExpr]]
+ricciTensor' m1 riemannTensor  =
+  ricciTensor'' riemannTensor 0 0 0 
+
+ricciTensor'' :: [[[[MathExpr]]]] -> Int -> Int -> Int -> [[MathExpr]]
+ricciTensor'' curvatureTensor 3 _ _ = []
+ricciTensor'' curvatureTensor a b c =
+  [[curvatureTensor !! a !! b !! c !! a]] ++ ricciTensor'' curvatureTensor (a + 1) (b + 1) (c + 1)
+  
 riemannTensor' :: Manifold -> [[MathExpr]] -> [[[[MathExpr]]]]
 riemannTensor' m1 metric =
   let coords = getCoordinates (getManifoldChart m1)
