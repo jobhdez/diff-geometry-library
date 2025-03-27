@@ -171,7 +171,7 @@ References:
   tangentVector :: a -> VectorField -> Point -> Tensor
   differential :: a -> a -> [MathExpr] -> Point -> Tensor
   christoffelSymbols :: a -> [[MathExpr]] -> Coordinates ->  [[[MathExpr]]]
-  --riemannTensor :: a -> [[MathExpr]] -> [[[[Float]]]]
+  riemannTensor :: a -> [[MathExpr]] -> [[[[MathExpr]]]]
 {--
 class TangentSpace a where
   tangetVectors :: [a] -> Point -> ([a], Point)
@@ -221,7 +221,7 @@ instance SmoothManifold Manifold where
   tangentVector fields manifold point = makeTangentVector fields manifold point
   differential m1 m2 mathexpr p1 = differential' m1 m2 mathexpr p1
   christoffelSymbols m1 metric coords = christoffelSymbols'' m1 metric coords
-  --riemannTensor m1 metric = riemannTensor' m1 metric
+  riemannTensor m1 metric = riemannTensor' m1 metric
 
 riemannTensor' :: Manifold -> [[MathExpr]] -> [[[[MathExpr]]]]
 riemannTensor' m1 metric =
@@ -270,8 +270,6 @@ riemannTensor''' metric cfs coords a b c d r =
 
 christoffelSymbols'' :: Manifold -> [[MathExpr]] -> Coordinates -> [[[MathExpr]]]
 christoffelSymbols'' m1 exps coords =
-  -- must generalize this to any dimension
-  -- works on 3 dimensions
   let inverse = invertMatrix exps in
     [[christoffelSymbols' m1 exps coords 0 0 0] ++ [christoffelSymbols' m1 exps coords 0 1 0] ++ [christoffelSymbols' m1 exps coords 0 2 0]] ++ [[christoffelSymbols' m1 inverse coords 0 0 0] ++ [christoffelSymbols' m1 inverse coords 0 1 0] ++ [christoffelSymbols' m1 inverse coords 0 2 0]]
 
