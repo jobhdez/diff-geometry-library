@@ -173,6 +173,8 @@ References:
   christoffelSymbols :: a -> [[MathExpr]] -> Coordinates ->  [[[MathExpr]]]
   riemannTensor :: a -> [[MathExpr]] -> [[[[MathExpr]]]]
   ricciTensor :: a -> [[[[MathExpr]]]] -> [[MathExpr]]
+  ricciScalar :: a -> [[MathExpr]] -> [[MathExpr]] -> MathExpr
+  
 {--
 class TangentSpace a where
   tangetVectors :: [a] -> Point -> ([a], Point)
@@ -225,7 +227,21 @@ instance SmoothManifold Manifold where
   christoffelSymbols m1 metric coords = christoffelSymbols'' m1 metric coords
   riemannTensor m1 metric = riemannTensor' m1 metric
   ricciTensor m1 metric = ricciTensor' m1 metric
+  ricciScalar m1 tensor metric = ricciScalar' m1 tensor metric
 
+ricciScalar' :: Manifold -> [[MathExpr]] -> [[MathExpr]] -> MathExpr
+ricciScalar' m1 ricciTensor metric =
+  ricciScalar'' ricciTensor metric 0 0
+
+ricciScalar'' :: [[MathExpr]] -> [[MathExpr]] -> Int -> Int -> MathExpr
+ricciScalar'' tensor metric i j =
+  if i  < length tensor
+  then
+    Plus (Mul (g metric i j) (g tensor i j)) (ricciScalar'' tensor metric (i + 1) (j + 1))
+  else
+    Num 0
+  
+  
 ricciTensor' :: Manifold -> [[[[MathExpr]]]] -> [[MathExpr]]
 ricciTensor' m1 riemannTensor  =
   ricciTensor'' riemannTensor 0 0 0 
