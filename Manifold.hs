@@ -193,7 +193,7 @@ class SmoothMap a where
 instance SmoothMap Manifold where
   differential m1 m2 expr p1 = differential'' m1 m2 expr p1
 --}
-  
+
 class Chart a where
   frame :: a -> [String]
   --restrict :: a -> Manifold -> a
@@ -240,8 +240,7 @@ ricciScalar'' tensor metric i j =
     Plus (Mul (g metric i j) (g tensor i j)) (ricciScalar'' tensor metric (i + 1) (j + 1))
   else
     Num 0
-  
-  
+    
 ricciTensor' :: Manifold -> [[[[MathExpr]]]] -> [[MathExpr]]
 ricciTensor' m1 riemannTensor  =
   ricciTensor'' riemannTensor 0 0 0 
@@ -410,7 +409,7 @@ topologicalField manifold chart fn =
 topologicalOpenSubset :: Manifold -> Manifold -> Map.Map String Manifold -> Map.Map String Manifold
 topologicalOpenSubset manifold manifold' subsets =
 {--
-If an U is an open subset of a manifold M then
+If U is an open subset of a manifold M then
 every element of U is also an element of M and U is in the
 topology of M.
 
