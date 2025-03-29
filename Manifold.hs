@@ -193,7 +193,7 @@ class SmoothMap a where
 instance SmoothMap Manifold where
   differential m1 m2 expr p1 = differential'' m1 m2 expr p1
 --}
-
+  
 class Chart a where
   frame :: a -> [String]
   --restrict :: a -> Manifold -> a
@@ -240,7 +240,8 @@ ricciScalar'' tensor metric i j =
     Plus (Mul (g metric i j) (g tensor i j)) (ricciScalar'' tensor metric (i + 1) (j + 1))
   else
     Num 0
-    
+  
+  
 ricciTensor' :: Manifold -> [[[[MathExpr]]]] -> [[MathExpr]]
 ricciTensor' m1 riemannTensor  =
   ricciTensor'' riemannTensor 0 0 0 
@@ -298,12 +299,7 @@ riemannTensor''' metric cfs coords a b c d r =
 christoffelSymbols'' :: Manifold -> [[MathExpr]] -> Coordinates -> [[[MathExpr]]]
 christoffelSymbols'' m1 exps coords =
   let inverse = invertMatrix exps in
-    [[christoffelSymbols' m1 exps coords 0 0 0] ++ 
-    [christoffelSymbols' m1 exps coords 0 1 0] ++ 
-    [christoffelSymbols' m1 exps coords 0 2 0]] ++ 
-    [[christoffelSymbols' m1 inverse coords 0 0 0] ++ 
-    [christoffelSymbols' m1 inverse coords 0 1 0] ++ 
-    [christoffelSymbols' m1 inverse coords 0 2 0]]
+    [[christoffelSymbols' m1 exps coords 0 0 0] ++ [christoffelSymbols' m1 exps coords 0 1 0] ++ [christoffelSymbols' m1 exps coords 0 2 0]] ++ [[christoffelSymbols' m1 inverse coords 0 0 0] ++ [christoffelSymbols' m1 inverse coords 0 1 0] ++ [christoffelSymbols' m1 inverse coords 0 2 0]]
 
 {--
 christoffelSymbols' :: Manifold -> [[MathExpr]] -> Coordinates -> Int -> Int -> Int -> [Float]
@@ -414,7 +410,7 @@ topologicalField manifold chart fn =
 topologicalOpenSubset :: Manifold -> Manifold -> Map.Map String Manifold -> Map.Map String Manifold
 topologicalOpenSubset manifold manifold' subsets =
 {--
-If U is an open subset of a manifold M then
+If an U is an open subset of a manifold M then
 every element of U is also an element of M and U is in the
 topology of M.
 
