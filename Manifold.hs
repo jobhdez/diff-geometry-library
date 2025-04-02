@@ -308,7 +308,12 @@ riemannTensor''' metric cfs coords a b c d r =
 christoffelSymbols'' :: Manifold -> [[MathExpr]] -> Coordinates -> [[[MathExpr]]]
 christoffelSymbols'' m1 exps coords =
   let inverse = invertMatrix exps in
-    [[christoffelSymbols' m1 exps coords 0 0 0] ++ [christoffelSymbols' m1 exps coords 0 1 0] ++ [christoffelSymbols' m1 exps coords 0 2 0]] ++ [[christoffelSymbols' m1 inverse coords 0 0 0] ++ [christoffelSymbols' m1 inverse coords 0 1 0] ++ [christoffelSymbols' m1 inverse coords 0 2 0]]
+    [[christoffelSymbols' m1 exps coords 0 0 0] ++ 
+    [christoffelSymbols' m1 exps coords 0 1 0] ++ 
+    [christoffelSymbols' m1 exps coords 0 2 0]] ++ 
+    [[christoffelSymbols' m1 inverse coords 0 0 0] ++ 
+    [christoffelSymbols' m1 inverse coords 0 1 0] ++ 
+    [christoffelSymbols' m1 inverse coords 0 2 0]]
 
 {--
 christoffelSymbols' :: Manifold -> [[MathExpr]] -> Coordinates -> Int -> Int -> Int -> [Float]
